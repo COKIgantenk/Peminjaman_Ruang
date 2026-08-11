@@ -1,0 +1,133 @@
+using Dapper;
+using PeminjamanRuangAPI.Data;
+using PeminjamanRuangAPI.Models;
+
+namespace PeminjamanRuangAPI.Repositories
+{
+    public class BookingRepository : IBookingRepository
+    {
+        private readonly DatabaseConnection _dbConnection;
+
+        public BookingRepository(DatabaseConnection dbConnection)
+        {
+            _dbConnection = dbConnection;
+        }
+
+        public async Task<IEnumerable<Booking>> GetAllBookingsAsync()
+        {
+            using (var connection = _dbConnection.CreateConnection())
+            {
+                const string query = "SELECT * FROM bookings ORDER BY booking_date DESC, start_time DESC";
+                return await connection.QueryAsync<Booking>(query);
+            }
+        }
+
+        public async Task<Booking> GetBookingByIdAsync(int id)
+        {
+            using (var connection = _dbConnection.CreateConnection())
+            {
+                const string query = "SELECT * FROM bookings WHERE id = @Id";
+                return await connection.QueryFirstOrDefaultAsync<Booking>(query, new { Id = id });
+            }
+        }
+
+        public async Task<IEnumerable<Booking>> GetUserBookingsAsync(int userId)
+        {
+            using (var connection = _dbConnection.CreateConnection())
+            {
+                const string query = "SELECT * FROM bookings WHERE user_id = @UserId ORDER BY booking_date DESC";
+                return await connection.QueryAsync<Booking>(query, new { UserId = userId });
+            }
+        }
+
+        public async Task<IEnumerable<Booking>> GetBookingsByStatusAsync(string status)
+        {
+            using (var connection = _dbConnection.CreateConnection())
+            {
+                const string query = "SELECT * FROM bookings WHERE status = @Status ORDER BY booking_date DESC";
+                return await connection.QueryAsync<Booking>(query, new { Status = status });
+            }
+        }
+
+        public async Task<IEnumerable<Booking>> GetBookingsByDateAsync(DateTime date)
+        {
+            using (var connection = _dbConnection.CreateConnection())
+            {
+                const string query = "SELECT * FROM bookings WHERE booking_date = @Date ORDER BY start_time";
+                return await connection.QueryAsync<Booking>(query, new { Date = date });
+            }
+        }
+
+        public async Task<bool> CreateBookingAsync(Booking booking)
+        {
+            using (var connection = _dbConnection.CreateConnection())
+            {
+                const string query = @"
+                    INSERT INTO bookings (user_id, room_id, booking_date, start_time, end_time, num_people, 
+                                         title, requester_name, requester_division, description, status, 
+                                         approval_notes, approved_by_admin_id, created_at, updated_at)
+                    VALUES (@UserId, @RoomId, @BookingDate, @StartTime, @EndTime, @NumPeople, 
+                            @Title, @RequesterName, @RequesterDivision, @Description, @Status, 
+                            @ApprovalNotes, @ApprovedByAdminId, NOW(), NOW())";
+                
+                var result = await connection.ExecuteAsync(query, booking);
+                return result > 0;
+            }
+        }
+
+        public async Task<bool> UpdateBookingAsync(Booking booking)
+        {
+            using (var connection = _dbConnection.CreateConnection())
+            {
+                const string query = @"
+                    UPDATE bookings 
+                    SET booking_date = @BookingDate, start_time = @StartTime, end_time = @EndTime,
+                        num_people = @NumPeople, title = @Title, requester_name = @RequesterName,
+                        requester_division = @RequesterDivision, description = @Description,
+                        status = @Status, approval_notes = @ApprovalNotes, updated_at = NOW()
+                    WHERE id = @Id";
+                
+                var result = await connection.ExecuteAsync(query, booking);
+                return result > 0;
+            }
+        }
+
+        public async Task<bool> ApproveBookingAsync(int bookingId, int adminId)
+        {
+            using (var connection = _dbConnection.CreateConnection())
+            {
+                const string query = @"
+                    UPDATE bookings 
+                    SET status = 'APPROVED', approved_by_admin_id = @AdminId, updated_at = NOW()
+                    WHERE id = @Id";
+                
+                var result = await connection.ExecuteAsync(query, new { Id = bookingId, AdminId = adminId });
+                return result > 0;
+            }
+        }
+
+        public async Task<bool> RejectBookingAsync(int bookingId, int adminId, string reason)
+        {
+            using (var connection = _dbConnection.CreateConnection())
+            {
+                const string query = @"
+                    UPDATE bookings 
+                    SET status = 'REJECTED', approval_notes = @Reason, approved_by_admin_id = @AdminId, updated_at = NOW()
+                    WHERE id = @Id";
+                
+                var result = await connection.ExecuteAsync(query, new { Id = bookingId, AdminId = adminId, Reason = reason });
+                return result > 0;
+            }
+        }
+
+        public async Task<bool> CancelBookingAsync(int bookingId)
+        {
+            using (var connection = _dbConnection.CreateConnection())
+            {
+                const string query = "UPDATE bookings SET status = 'CANCELLED', updated_at = NOW() WHERE id = @Id";
+                var result = await connection.ExecuteAsync(query, new { Id = bookingId });
+                return result > 0;
+            }
+        }
+    }
+}
