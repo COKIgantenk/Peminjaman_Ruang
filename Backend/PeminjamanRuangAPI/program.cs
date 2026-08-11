@@ -1,7 +1,7 @@
 using PeminjamanRuangAPI.Data;
 using PeminjamanRuangAPI.Repositories;
 
-var builder = WebApplicationBuilder.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
