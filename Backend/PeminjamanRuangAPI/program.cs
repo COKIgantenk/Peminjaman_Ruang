@@ -6,6 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
+builder.Services.AddControllers();
 
 // Register DatabaseConnection
 builder.Services.AddScoped<DatabaseConnection>();
@@ -45,6 +46,7 @@ app.UseCors("AllowAll");
 app.UseAuthorization();
 
 app.MapRazorPages();
+app.MapControllers();
 
 app.MapGet("/api/test-db", async (DatabaseConnection db) =>
 {
