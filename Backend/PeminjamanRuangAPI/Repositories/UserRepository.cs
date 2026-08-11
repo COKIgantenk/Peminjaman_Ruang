@@ -22,7 +22,7 @@ namespace PeminjamanRuangAPI.Repositories
             }
         }
 
-        public async Task<User> GetUserByIdAsync(int id)
+        public async Task<User?> GetUserByIdAsync(int id)
         {
             using (var connection = _dbConnection.CreateConnection())
             {
@@ -31,7 +31,7 @@ namespace PeminjamanRuangAPI.Repositories
             }
         }
 
-        public async Task<User> GetUserByEmailAsync(string email)
+        public async Task<User?> GetUserByEmailAsync(string email)
         {
             using (var connection = _dbConnection.CreateConnection())
             {
