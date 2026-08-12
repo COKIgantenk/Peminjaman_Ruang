@@ -22,7 +22,7 @@ namespace PeminjamanRuangAPI.Controllers
 
             return Ok(users);
         }
-
+        
         [HttpPost]
         public async Task<ActionResult> CreateUser([FromBody]User user)
         {
