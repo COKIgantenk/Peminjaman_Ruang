@@ -22,5 +22,35 @@ namespace PeminjamanRuangAPI.Controllers
 
             return Ok(users);
         }
+
+        [HttpPost]
+        public async Task<ActionResult> CreateUser([FromBody]User user)
+        {
+            var exist = await _userRepository.UserExistsAsync(user.Email);
+
+            if (exist)
+            {
+                return Conflict(new 
+                { 
+                    message = "User dengan email tersebut sudah ada." 
+                });
+            }
+
+            var success = await _userRepository.CreateUserAsync(user);
+
+            if (!success)
+            {
+                return BadRequest(new 
+                { 
+                    message = "User gagal dibuat." 
+                });
+            }
+
+            return Ok(new 
+            { 
+                message = "User berhasil dibuat." 
+            });
+
+        }
     }
 }
