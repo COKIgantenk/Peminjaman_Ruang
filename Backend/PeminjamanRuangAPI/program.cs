@@ -15,6 +15,7 @@ builder.Services.AddScoped<DatabaseConnection>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IRoomRepository, RoomRepository>();
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
+builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
 
 // Add CORS if needed for API calls
 builder.Services.AddCors(options =>
