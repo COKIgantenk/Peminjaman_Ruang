@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using PeminjamanRuangAPI.Models;
 using PeminjamanRuangAPI.Repositories;
+using PeminjamanRuangAPI.DTOs;
 
 namespace PeminjamanRuangAPI.Controllers
 {
@@ -16,12 +17,26 @@ namespace PeminjamanRuangAPI.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<User>>> GetAllUsers()
+        public async Task<ActionResult<IEnumerable<UserResponseDto>>> GetAllUsers()
         {
             var users = await _userRepository.GetAllUsersAsync();
 
-            return Ok(users);
-        }
+            var response = users.Select(user => new UserResponseDto
+    {
+        Id = user.Id,
+        Email = user.Email,
+        FullName = user.FullName,
+        PhoneNumber = user.PhoneNumber,
+        DepartmentId = user.DepartmentId,
+        Role = user.Role,
+        IsActive = user.IsActive,
+        LastLogin = user.LastLogin,
+        CreatedAt = user.CreatedAt,
+        UpdatedAt = user.UpdatedAt
+    });
+
+    return Ok(response);
+}
         
         [HttpPost]
         public async Task<ActionResult> CreateUser([FromBody]User user)
