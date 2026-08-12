@@ -16,12 +16,20 @@ namespace PeminjamanRuangAPI.Controllers
             _userRepository = userRepository;
         }
 
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<UserResponseDto>>> GetAllUsers()
+        [HttpGet("{id}")]
+        public async Task<ActionResult<UserResponseDto>> GetUser(int id)
         {
-            var users = await _userRepository.GetAllUsersAsync();
+            var user = await _userRepository.GetUserByIdAsync(id);
 
-            var response = users.Select(user => new UserResponseDto
+            if (user == null)
+            {
+                return NotFound(new 
+                { 
+                    message = "User tidak ditemukan." 
+                });
+            }
+
+            var response = new UserResponseDto
     {
         Id = user.Id,
         Email = user.Email,
@@ -33,15 +41,15 @@ namespace PeminjamanRuangAPI.Controllers
         LastLogin = user.LastLogin,
         CreatedAt = user.CreatedAt,
         UpdatedAt = user.UpdatedAt
-    });
+    };
 
     return Ok(response);
 }
         
         [HttpPost]
-        public async Task<ActionResult> CreateUser([FromBody]User user)
+        public async Task<ActionResult> CreateUser([FromBody]CreateUserRequestDto request)
         {
-            var exist = await _userRepository.UserExistsAsync(user.Email);
+            var exist = await _userRepository.UserExistsAsync(request.Email);
 
             if (exist)
             {
@@ -50,6 +58,17 @@ namespace PeminjamanRuangAPI.Controllers
                     message = "User dengan email tersebut sudah ada." 
                 });
             }
+
+            var user = new User
+            {
+                Email = request.Email,
+                PasswordHash = request.Password, // In a real application, you should hash the password before storing it
+                FullName = request.FullName,
+                PhoneNumber = request.PhoneNumber,
+                DepartmentId = request.DepartmentId,
+                Role = request.Role,
+                IsActive = true,
+            };
 
             var success = await _userRepository.CreateUserAsync(user);
 

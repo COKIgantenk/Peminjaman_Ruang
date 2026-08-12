@@ -1,6 +1,7 @@
 using Dapper;
 using PeminjamanRuangAPI.Data;
 using PeminjamanRuangAPI.Repositories;
+using PeminjamanRuangAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,9 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IRoomRepository, RoomRepository>();
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
+
+// Register Services
+builder.Services.AddScoped<PasswordService>();
 
 // Add CORS if needed for API calls
 builder.Services.AddCors(options =>
