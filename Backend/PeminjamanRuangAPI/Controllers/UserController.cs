@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using PeminjamanRuangAPI.Models;
 using PeminjamanRuangAPI.Repositories;
 using PeminjamanRuangAPI.DTOs;
+using PeminjamanRuangAPI.Services;
 
 namespace PeminjamanRuangAPI.Controllers
 {
@@ -10,10 +11,14 @@ namespace PeminjamanRuangAPI.Controllers
     public class UserController : ControllerBase
     {
         private readonly IUserRepository _userRepository;
+        private readonly PasswordService _passwordService;
 
-        public UserController(IUserRepository userRepository)
+        public UserController(
+            IUserRepository userRepository,
+            PasswordService passwordService)
         {
             _userRepository = userRepository;
+            _passwordService = passwordService;
         }
 
         [HttpGet("{id}")]
@@ -58,6 +63,7 @@ namespace PeminjamanRuangAPI.Controllers
                     message = "User dengan email tersebut sudah ada." 
                 });
             }
+            var passwordHash = _passwordService.HashPassword(request.Password);
 
             var user = new User
             {
