@@ -11,13 +11,16 @@ namespace PeminjamanRuangAPI.Controllers
     {
         private readonly IUserRepository _userRepository;
         private readonly PasswordService _passwordService;
+        private readonly JwtService _jwtService;
 
         public AuthController(
             IUserRepository userRepository,
-            PasswordService passwordService)
+            PasswordService passwordService,
+            JwtService jwtService)
         {
             _userRepository = userRepository;
             _passwordService = passwordService;
+            _jwtService = jwtService;
         }
 
         [HttpPost("login")]
@@ -55,13 +58,16 @@ namespace PeminjamanRuangAPI.Controllers
                 });
             }
 
+            var token = _jwtService.GenerateToken(user);
+
             var response = new LoginResponseDto
             {
                 Id = user.Id,
                 Email = user.Email,
                 FullName = user.FullName,
                 Role = user.Role,
-                IsActive = user.IsActive
+                IsActive = user.IsActive,
+                Token = token
             };
 
             return Ok(response);

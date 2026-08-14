@@ -2,6 +2,10 @@ using Dapper;
 using PeminjamanRuangAPI.Data;
 using PeminjamanRuangAPI.Repositories;
 using PeminjamanRuangAPI.Services;
+using PeminjamanRuangAPI.Configuration;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +24,47 @@ builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
 
 // Register Services
 builder.Services.AddScoped<PasswordService>();
+
+builder.Services.Configure<JwtSettings>(
+    builder.Configuration.GetSection("JwtSettings")
+);
+
+builder.Services.AddSingleton(sp =>
+    sp.GetRequiredService<
+        Microsoft.Extensions.Options.IOptions<JwtSettings>
+    >().Value
+);
+
+builder.Services.AddScoped<JwtService>();
+
+var jwtSettings = builder.Configuration
+    .GetSection("JwtSettings")
+    .Get<JwtSettings>()
+    ?? throw new InvalidOperationException("JwtSettings belum dikonfigurasi.");
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+
+            ValidIssuer = jwtSettings.Issuer,
+            ValidAudience = jwtSettings.Audience,
+
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwtSettings.SecretKey)
+            ),
+
+            ClockSkew = TimeSpan.Zero
+        };
+    });
+
+builder.Services.AddAuthorization();
 
 // Add CORS if needed for API calls
 builder.Services.AddCors(options =>
@@ -48,6 +93,7 @@ app.UseRouting();
 
 app.UseCors("AllowAll");
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapRazorPages();

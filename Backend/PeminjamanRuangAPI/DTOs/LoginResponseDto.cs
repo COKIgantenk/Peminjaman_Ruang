@@ -11,5 +11,6 @@ namespace PeminjamanRuangAPI.DTOs
         public string Role { get; set; } = string.Empty;
 
         public bool IsActive { get; set; }
+        public string Token { get; set; } = string.Empty;
     }
 }

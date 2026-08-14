@@ -3,11 +3,13 @@ using PeminjamanRuangAPI.Models;
 using PeminjamanRuangAPI.Repositories;
 using PeminjamanRuangAPI.DTOs;
 using PeminjamanRuangAPI.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace PeminjamanRuangAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class UserController : ControllerBase
     {
         private readonly IUserRepository _userRepository;
@@ -91,6 +93,17 @@ namespace PeminjamanRuangAPI.Controllers
                 message = "User berhasil dibuat." 
             });
 
+            
+
         }
+
+        [HttpGet("admin-test")]
+        [Authorize(Roles = "ADMIN")]
+        public IActionResult AdminTest()
+        {
+            return Ok(new { message = "Akses berhasil. Anda adalah ADMIN." });
+        }
+
+        
     }
 }
