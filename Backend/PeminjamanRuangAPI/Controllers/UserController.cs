@@ -68,7 +68,7 @@ namespace PeminjamanRuangAPI.Controllers
             var user = new User
             {
                 Email = request.Email,
-                PasswordHash = request.Password, // In a real application, you should hash the password before storing it
+                PasswordHash = passwordHash, // In a real application, you should hash the password before storing it
                 FullName = request.FullName,
                 PhoneNumber = request.PhoneNumber,
                 DepartmentId = request.DepartmentId,

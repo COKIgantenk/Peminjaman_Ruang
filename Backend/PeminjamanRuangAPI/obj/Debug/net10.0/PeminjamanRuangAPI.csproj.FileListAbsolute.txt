@@ -100,3 +100,12 @@ D:\Project\Peminjaman_Ruang\Backend\PeminjamanRuangAPI\obj\Debug\net10.0\refint\
 D:\Project\Peminjaman_Ruang\Backend\PeminjamanRuangAPI\obj\Debug\net10.0\PeminjamanRuangAPI.pdb
 D:\Project\Peminjaman_Ruang\Backend\PeminjamanRuangAPI\obj\Debug\net10.0\PeminjamanRuangAPI.genruntimeconfig.cache
 D:\Project\Peminjaman_Ruang\Backend\PeminjamanRuangAPI\obj\Debug\net10.0\ref\PeminjamanRuangAPI.dll
+D:\Project\Peminjaman_Ruang\Backend\PeminjamanRuangAPI\bin\Debug\net10.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+D:\Project\Peminjaman_Ruang\Backend\PeminjamanRuangAPI\bin\Debug\net10.0\Microsoft.Bcl.Cryptography.dll
+D:\Project\Peminjaman_Ruang\Backend\PeminjamanRuangAPI\bin\Debug\net10.0\Microsoft.IdentityModel.Abstractions.dll
+D:\Project\Peminjaman_Ruang\Backend\PeminjamanRuangAPI\bin\Debug\net10.0\Microsoft.IdentityModel.JsonWebTokens.dll
+D:\Project\Peminjaman_Ruang\Backend\PeminjamanRuangAPI\bin\Debug\net10.0\Microsoft.IdentityModel.Logging.dll
+D:\Project\Peminjaman_Ruang\Backend\PeminjamanRuangAPI\bin\Debug\net10.0\Microsoft.IdentityModel.Protocols.dll
+D:\Project\Peminjaman_Ruang\Backend\PeminjamanRuangAPI\bin\Debug\net10.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+D:\Project\Peminjaman_Ruang\Backend\PeminjamanRuangAPI\bin\Debug\net10.0\Microsoft.IdentityModel.Tokens.dll
+D:\Project\Peminjaman_Ruang\Backend\PeminjamanRuangAPI\bin\Debug\net10.0\System.IdentityModel.Tokens.Jwt.dll
