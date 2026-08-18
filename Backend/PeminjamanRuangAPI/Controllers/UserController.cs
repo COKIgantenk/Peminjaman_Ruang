@@ -83,7 +83,7 @@ namespace PeminjamanRuangAPI.Controllers
             var user = new User
             {
                 Email = request.Email,
-                PasswordHash = passwordHash, // In a real application, you should hash the password before storing it
+                PasswordHash = passwordHash, 
                 FullName = request.FullName,
                 PhoneNumber = request.PhoneNumber,
                 DepartmentId = request.DepartmentId,
@@ -106,6 +106,75 @@ namespace PeminjamanRuangAPI.Controllers
                 message = "User berhasil dibuat." 
             });
         }
+
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<UserResponseDto>>> GetAllUsers()
+        {
+            var users = await _userRepository.GetAllUsersAsync();
+
+            var response = users.Select(user => new UserResponseDto
+            {
+                Id = user.Id,
+                Email = user.Email,
+                FullName = user.FullName,
+                PhoneNumber = user.PhoneNumber,
+                DepartmentId = user.DepartmentId,
+                Role = user.Role,
+                IsActive = user.IsActive,
+                LastLogin = user.LastLogin,
+                CreatedAt = user.CreatedAt,
+                UpdatedAt = user.UpdatedAt
+            });
+
+            return Ok(response);
+        }
         
+        [HttpPut("{id}")]
+        public async Task<ActionResult> UpdateUser(
+            int id,
+            [FromBody] UpdateUserRequestDto request)
+        {
+            var user = await _userRepository.GetUserByIdAsync(id);
+
+            if (user == null)
+            {
+                return NotFound(new 
+                { 
+                    message = "User tidak ditemukan." 
+                });
+            }
+
+            var allowedRoles = new[] { "USER", "ADMIN" };
+            var role = request.Role.ToUpperInvariant();
+
+            if (!allowedRoles.Contains(role))
+            {
+                return BadRequest(new 
+                { 
+                    message = "Role tidak valid. Role harus USER atau ADMIN." 
+                });
+            }
+
+            user.FullName = request.FullName;
+            user.PhoneNumber = request.PhoneNumber;
+            user.DepartmentId = request.DepartmentId;
+            user.Role = request.Role.ToUpperInvariant();
+            user.IsActive = request.IsActive;
+
+            var success = await _userRepository.UpdateUserAsync(user);
+
+            if (!success)
+            {
+                return BadRequest(new 
+                { 
+                    message = "Gagal memperbarui user." 
+                });
+            }
+
+            return Ok(new 
+            { 
+                message = "User berhasil diperbarui." 
+            });
+        }
     }
 }
