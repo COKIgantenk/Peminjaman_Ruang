@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using PeminjamanRuangAPI.DTOs;
 using PeminjamanRuangAPI.Repositories;
 using PeminjamanRuangAPI.Services;
+using Microsoft.AspNetCore.Authorization;
+using PeminjamanRuangAPI.Models;
 
 namespace PeminjamanRuangAPI.Controllers
 {
@@ -23,6 +25,7 @@ namespace PeminjamanRuangAPI.Controllers
             _jwtService = jwtService;
         }
 
+        [AllowAnonymous]
         [HttpPost("login")]
         public async Task<ActionResult<LoginResponseDto>> Login(
             [FromBody] LoginRequestDto request)
@@ -71,6 +74,52 @@ namespace PeminjamanRuangAPI.Controllers
             };
 
             return Ok(response);
+        }
+
+        [AllowAnonymous]
+        [HttpPost("register")]
+        public async Task<ActionResult> Register([FromBody] RegisterRequestDto request)
+        {
+            var exist = await _userRepository.UserExistsAsync(request.Email);
+
+            if (exist)
+            {
+                return Conflict(new
+                {
+                    message = "User dengan email tersebut sudah ada."
+                });
+            }
+
+            var passwordHash = _passwordService.HashPassword(request.Password);
+
+            var user = new User
+            {
+                Email = request.Email,
+                PasswordHash = passwordHash,
+                FullName = request.FullName,
+                PhoneNumber = request.PhoneNumber,
+                DepartmentId = request.DepartmentId,
+
+                //Register publik selalu USER
+                Role = "USER",
+
+                IsActive = true, // Set default status to active
+            };
+
+            var succes = await _userRepository.CreateUserAsync(user);
+
+            if (!succes)
+            {
+                return BadRequest(new
+                {
+                    message = "Registrasi gagal. Silakan coba lagi."
+                });
+            }
+
+            return Ok(new
+            {
+                message = "Registrasi berhasil."
+            });
         }
     }
 }

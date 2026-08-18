@@ -9,7 +9,7 @@ namespace PeminjamanRuangAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
+    [Authorize(Roles = "ADMIN")]
     public class UserController : ControllerBase
     {
         private readonly IUserRepository _userRepository;
@@ -65,6 +65,19 @@ namespace PeminjamanRuangAPI.Controllers
                     message = "User dengan email tersebut sudah ada." 
                 });
             }
+
+            var allowedRoles = new[] { "USER", "ADMIN" };
+
+            var role = request.Role.ToUpperInvariant();
+
+            if (!allowedRoles.Contains(role))
+            {
+                return BadRequest(new 
+                { 
+                    message = "Role tidak valid. Role harus USER atau ADMIN." 
+                });
+            }
+
             var passwordHash = _passwordService.HashPassword(request.Password);
 
             var user = new User
@@ -74,7 +87,7 @@ namespace PeminjamanRuangAPI.Controllers
                 FullName = request.FullName,
                 PhoneNumber = request.PhoneNumber,
                 DepartmentId = request.DepartmentId,
-                Role = request.Role,
+                Role = role,
                 IsActive = true,
             };
 
@@ -92,18 +105,7 @@ namespace PeminjamanRuangAPI.Controllers
             { 
                 message = "User berhasil dibuat." 
             });
-
-            
-
         }
-
-        [HttpGet("admin-test")]
-        [Authorize(Roles = "ADMIN")]
-        public IActionResult AdminTest()
-        {
-            return Ok(new { message = "Akses berhasil. Anda adalah ADMIN." });
-        }
-
         
     }
 }
