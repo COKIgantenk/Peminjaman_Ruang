@@ -17,35 +17,79 @@ namespace PeminjamanRuangAPI.Repositories
         {
             using (var connection = _dbConnection.CreateConnection())
             {
-                const string query = "SELECT * FROM rooms ORDER BY id";
+                const string query = @"
+                SELECT
+                    id AS Id,
+                    name AS Name,
+                    location AS Location,
+                    capacity AS Capacity,
+                    description AS Description,
+                    image_url AS ImageUrl,
+                    is_active AS IsActive,
+                    created_at AS CreatedAt,
+                    updated_at AS UpdatedAt
+                FROM rooms
+                ORDER BY id";
                 return await connection.QueryAsync<Room>(query);
             }
         }
 
-        public async Task<Room> GetRoomByIdAsync(int id)
-        {
-            using (var connection = _dbConnection.CreateConnection())
-            {
-                const string query = "SELECT * FROM rooms WHERE id = @Id";
-                return await connection.QueryFirstOrDefaultAsync<Room>(query, new { Id = id });
-            }
-        }
-
-        public async Task<IEnumerable<Room>> GetAvailableRoomsAsync(DateTime bookingDate, TimeSpan startTime, TimeSpan endTime, int capacity)
+        public async Task<Room?> GetRoomByIdAsync(int id)
         {
             using (var connection = _dbConnection.CreateConnection())
             {
                 const string query = @"
-                    SELECT DISTINCT r.* 
+                    SELECT
+                        id AS Id,
+                        name AS Name,
+                        location AS Location,
+                        capacity AS Capacity,
+                        description AS Description,
+                        image_url AS ImageUrl,
+                        is_active AS IsActive,
+                        created_at AS CreatedAt,
+                        updated_at AS UpdatedAt
+                    FROM rooms
+                    WHERE id = @Id";
+
+                return await connection.QueryFirstOrDefaultAsync<Room>(
+                    query, 
+                    new { Id = id });
+            }
+        }
+
+        public async Task<IEnumerable<Room>> GetAvailableRoomsAsync(
+            DateTime bookingDate, 
+            TimeSpan startTime, 
+            TimeSpan endTime, 
+            int capacity)
+        {
+            using (var connection = _dbConnection.CreateConnection())
+            {
+                const string query = @"
+                    SELECT DISTINCT 
+                        r.id AS Id,
+                        r.name AS Name,
+                        r.location AS Location,
+                        r.capacity AS Capacity,
+                        r.description AS Description,
+                        r.image_url AS ImageUrl,
+                        r.is_active AS IsActive,
+                        r.created_at AS CreatedAt,
+                        r.updated_at AS UpdatedAt
                     FROM rooms r
-                    WHERE r.is_active = true 
-                    AND r.capacity >= @Capacity
-                    AND r.id NOT IN (
-                        SELECT room_id FROM bookings 
-                        WHERE booking_date = @BookingDate 
-                        AND status IN ('PENDING', 'APPROVED')
-                        AND NOT (end_time <= @StartTime OR start_time >= @EndTime)
-                    )
+                    WHERE r.is_active = true
+                        AND r.capacity >= @Capacity
+                        AND r.id NOT IN (
+                            SELECT room_id
+                            FROM bookings 
+                            WHERE booking_date = @BookingDate
+                                AND status IN ('Pending', 'Approved')
+                                AND not (
+                                    end_time <= @StartTime 
+                                    OR start_time >= @EndTime
+                                )
+                        )
                     ORDER BY r.name";
                 
                 return await connection.QueryAsync<Room>(query, new 
@@ -87,12 +131,20 @@ namespace PeminjamanRuangAPI.Repositories
             }
         }
 
-        public async Task<bool> DeleteRoomAsync(int id)
+        public async Task<bool> DeactivateRoomAsync(int id)
         {
             using (var connection = _dbConnection.CreateConnection())
             {
-                const string query = "UPDATE rooms SET is_active = false, updated_at = NOW() WHERE id = @Id";
-                var result = await connection.ExecuteAsync(query, new { Id = id });
+                const string query = @"
+                    UPDATE rooms 
+                    SET is_active = false, 
+                        updated_at = NOW() 
+                    WHERE id = @Id";
+
+                var result = await connection.ExecuteAsync(
+                    query, 
+                    new { Id = id });
+
                 return result > 0;
             }
         }

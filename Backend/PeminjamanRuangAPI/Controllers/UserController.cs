@@ -14,13 +14,16 @@ namespace PeminjamanRuangAPI.Controllers
     {
         private readonly IUserRepository _userRepository;
         private readonly PasswordService _passwordService;
+        private readonly IDepartmentRepository _departmentRepository;
 
         public UserController(
             IUserRepository userRepository,
-            PasswordService passwordService)
+            PasswordService passwordService,
+            IDepartmentRepository departmentRepository)
         {
             _userRepository = userRepository;
             _passwordService = passwordService;
+            _departmentRepository = departmentRepository;
         }
 
         [HttpGet("{id}")]
@@ -63,6 +66,17 @@ namespace PeminjamanRuangAPI.Controllers
                 return Conflict(new 
                 { 
                     message = "User dengan email tersebut sudah ada." 
+                });
+            }
+
+            var department = await _departmentRepository
+                .GetDepartmentByIdAsync(request.DepartmentId);
+
+            if (department == null)
+            {
+                return BadRequest(new 
+                { 
+                    message = "Department tidak ditemukan." 
                 });
             }
 
@@ -144,6 +158,17 @@ namespace PeminjamanRuangAPI.Controllers
                 });
             }
 
+            var department = await _departmentRepository
+                .GetDepartmentByIdAsync(request.DepartmentId);
+
+            if (department == null)
+            {
+                return BadRequest(new 
+                { 
+                    message = "Department tidak ditemukan." 
+                });
+            }
+
             var allowedRoles = new[] { "USER", "ADMIN" };
             var role = request.Role.ToUpperInvariant();
 
@@ -158,7 +183,7 @@ namespace PeminjamanRuangAPI.Controllers
             user.FullName = request.FullName;
             user.PhoneNumber = request.PhoneNumber;
             user.DepartmentId = request.DepartmentId;
-            user.Role = request.Role.ToUpperInvariant();
+            user.Role = role;
             user.IsActive = request.IsActive;
 
             var success = await _userRepository.UpdateUserAsync(user);
@@ -174,6 +199,35 @@ namespace PeminjamanRuangAPI.Controllers
             return Ok(new 
             { 
                 message = "User berhasil diperbarui." 
+            });
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<ActionResult> DeleteUser(int id)
+        {
+            var user = await _userRepository.GetUserByIdAsync(id);
+
+            if (user == null)
+            {
+                return NotFound(new 
+                { 
+                    message = "User tidak ditemukan." 
+                });
+            }
+
+            var success = await _userRepository.DeleteUserAsync(id);
+
+            if (!success)
+            {
+                return BadRequest(new 
+                { 
+                    message = "Gagal menghapus user." 
+                });
+            }
+
+            return Ok(new 
+            { 
+                message = "User berhasil dihapus." 
             });
         }
     }
