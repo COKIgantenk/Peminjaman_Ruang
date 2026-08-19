@@ -12,10 +12,14 @@ namespace PeminjamanRuangAPI.Controllers
     public class RoomController : ControllerBase
     {
         private readonly IRoomRepository _roomRepository;
+        private readonly IFacilityRepository _facilityRepository;
 
-        public RoomController(IRoomRepository roomRepository)
+        public RoomController(
+            IRoomRepository roomRepository,
+            IFacilityRepository facilityRepository)
         {
             _roomRepository = roomRepository;
+            _facilityRepository = facilityRepository;
         }
 
         [HttpGet]
@@ -181,6 +185,104 @@ namespace PeminjamanRuangAPI.Controllers
             return Ok(new
             {
                 message = "Room berhasil dinonaktifkan."
+            });
+        }
+
+        [HttpGet("{id}/facilities")]
+        public async Task<ActionResult<IEnumerable<FacilityResponseDto>>> GetRoomFacilities(int id)
+        {
+            var room = await _roomRepository.GetRoomByIdAsync(id);
+
+            if (room == null)
+            {
+                return NotFound(new
+                {
+                    message = "Room tidak ditemukan."
+                });
+            }
+
+            var facilities = await _roomRepository.GetRoomFacilitiesAsync(id);
+
+            var response = facilities.Select(facility => new FacilityResponseDto
+            {
+                Id = facility.Id,
+                Name = facility.Name,
+                Description = facility.Description,
+                CreatedAt = facility.CreatedAt,
+                UpdatedAt = facility.UpdatedAt
+            });
+
+            return Ok(response);
+        }
+
+        [HttpPost("{roomId}/facilities/{facilityId}")]
+        [Authorize(Roles = "ADMIN")]
+        public async Task<ActionResult> AddFacilityToRoom(int roomId, int facilityId)
+        {
+            var room = await _roomRepository.GetRoomByIdAsync(roomId);
+
+            if (room == null )
+            {
+                return NotFound(new
+                {
+                    message = "Room tidak ditemukan."
+                });
+            }
+
+            var facility = await _facilityRepository.GetFacilityByIdAsync(facilityId);
+
+            if (facility == null)
+            {
+                return NotFound(new
+                {
+                    message = "Facility tidak ditemukan."
+                });
+            }
+
+            var success = await _roomRepository.AddFacilityToRoomAsync(roomId, facilityId);
+
+            if (!success)
+            {
+                return BadRequest(new
+                {
+                    message = "Gagal menambahkan Facility ke Room."
+                });
+            }
+
+            return Ok(new
+            {
+                message = "Facility berhasil ditambahkan ke Room."
+            });
+
+        }
+
+        [HttpDelete("{roomId}/facilities/{facilityId}")]
+        [Authorize(Roles = "ADMIN")]
+        public async Task<ActionResult> RemoveFacilityFromRoom(int roomId, int facilityId)
+        {
+            var room = await _roomRepository.GetRoomByIdAsync(roomId);
+
+            if (room == null)
+            {
+                return NotFound(new
+                {
+                    message = "Room tidak ditemukan."
+                });
+            }
+
+            var success = await _roomRepository.RemoveFacilityFromRoomAsync(roomId, facilityId);
+            
+            if (!success)
+            {
+                return BadRequest(new
+                {
+                    message = "Gagal menghapus Facility dari Room."
+                });
+            }
+
+            return Ok(new
+            {
+                message = "Facility berhasil dihapus dari Room."
             });
         }
     }
