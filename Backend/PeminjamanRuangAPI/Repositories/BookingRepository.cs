@@ -17,17 +17,59 @@ namespace PeminjamanRuangAPI.Repositories
         {
             using (var connection = _dbConnection.CreateConnection())
             {
-                const string query = "SELECT * FROM bookings ORDER BY booking_date DESC, start_time DESC";
+                const string query = @"
+                    SELECT
+                        id AS ""Id"",
+                        user_id AS ""UserId"",
+                        room_id AS ""RoomId"",
+                        booking_date AS ""BookingDate"",
+                        start_time AS ""StartTime"",
+                        end_time AS ""EndTime"",
+                        num_people AS ""NumPeople"",
+                        title AS ""Title"",
+                        requester_name AS ""RequesterName"",
+                        requester_division AS ""RequesterDivision"",
+                        description AS ""Description"",
+                        status AS ""Status"",
+                        approval_notes AS ""ApprovalNotes"",
+                        approved_by_admin_id AS ""ApprovedByAdminId"",
+                        created_at AS ""CreatedAt"",
+                        updated_at AS ""UpdatedAt""
+                    FROM bookings
+                    ORDER BY booking_date DESC, start_time DESC";
+
                 return await connection.QueryAsync<Booking>(query);
             }
         }
 
-        public async Task<Booking> GetBookingByIdAsync(int id)
+        public async Task<Booking?> GetBookingByIdAsync(int id)
         {
             using (var connection = _dbConnection.CreateConnection())
             {
-                const string query = "SELECT * FROM bookings WHERE id = @Id";
-                return await connection.QueryFirstOrDefaultAsync<Booking>(query, new { Id = id });
+                const string query = @"
+                    SELECT
+                        id AS ""Id"",
+                        user_id AS ""UserId"",
+                        room_id AS ""RoomId"",
+                        booking_date AS ""BookingDate"",
+                        start_time AS ""StartTime"",
+                        end_time AS ""EndTime"",
+                        num_people AS ""NumPeople"",
+                        title AS ""Title"",
+                        requester_name AS ""RequesterName"",
+                        requester_division AS ""RequesterDivision"",
+                        description AS ""Description"",
+                        status AS ""Status"",
+                        approval_notes AS ""ApprovalNotes"",
+                        approved_by_admin_id AS ""ApprovedByAdminId"",
+                        created_at AS ""CreatedAt"",
+                        updated_at AS ""UpdatedAt""
+                    FROM bookings
+                    WHERE id = @Id";
+
+                return await connection.QueryFirstOrDefaultAsync<Booking>(
+                    query, 
+                    new { Id = id });
             }
         }
 
@@ -35,8 +77,30 @@ namespace PeminjamanRuangAPI.Repositories
         {
             using (var connection = _dbConnection.CreateConnection())
             {
-                const string query = "SELECT * FROM bookings WHERE user_id = @UserId ORDER BY booking_date DESC";
-                return await connection.QueryAsync<Booking>(query, new { UserId = userId });
+                const string query = @"
+                    SELECT
+                        id AS ""Id"",
+                        user_id AS ""UserId"",
+                        room_id AS ""RoomId"",
+                        booking_date AS ""BookingDate"",
+                        start_time AS ""StartTime"",
+                        end_time AS ""EndTime"",
+                        num_people AS ""NumPeople"",
+                        title AS ""Title"",
+                        requester_name AS ""RequesterName"",
+                        requester_division AS ""RequesterDivision"",
+                        description AS ""Description"",
+                        status AS ""Status"",
+                        approval_notes AS ""ApprovalNotes"",
+                        approved_by_admin_id AS ""ApprovedByAdminId"",
+                        created_at AS ""CreatedAt"",
+                        updated_at AS ""UpdatedAt""
+                    FROM bookings
+                    WHERE user_id = @UserId";
+
+                return await connection.QueryAsync<Booking>(
+                    query, 
+                    new { UserId = userId });
             }
         }
 
@@ -44,17 +108,62 @@ namespace PeminjamanRuangAPI.Repositories
         {
             using (var connection = _dbConnection.CreateConnection())
             {
-                const string query = "SELECT * FROM bookings WHERE status = @Status ORDER BY booking_date DESC";
-                return await connection.QueryAsync<Booking>(query, new { Status = status });
+                const string query = @"
+                    SELECT
+                        id AS ""Id"",
+                        user_id AS ""UserId"",
+                        room_id AS ""RoomId"",
+                        booking_date AS ""BookingDate"",
+                        start_time AS ""StartTime"",
+                        end_time AS ""EndTime"",
+                        num_people AS ""NumPeople"",
+                        title AS ""Title"",
+                        requester_name AS ""RequesterName"",
+                        requester_division AS ""RequesterDivision"",
+                        description AS ""Description"",
+                        status AS ""Status"",
+                        approval_notes AS ""ApprovalNotes"",
+                        approved_by_admin_id AS ""ApprovedByAdminId"",
+                        created_at AS ""CreatedAt"",
+                        updated_at AS ""UpdatedAt""
+                    FROM bookings
+                    WHERE status = @Status
+                    ORDER BY booking_date DESC, start_time DESC ";
+
+                return await connection.QueryAsync<Booking>(
+                    query, 
+                    new { Status = status });
             }
         }
 
-        public async Task<IEnumerable<Booking>> GetBookingsByDateAsync(DateTime date)
+        public async Task<IEnumerable<Booking>> GetBookingsByDateAsync(DateOnly date)
         {
             using (var connection = _dbConnection.CreateConnection())
             {
-                const string query = "SELECT * FROM bookings WHERE booking_date = @Date ORDER BY start_time";
-                return await connection.QueryAsync<Booking>(query, new { Date = date });
+                const string query = @"
+                    SELECT
+                        id AS ""Id"",
+                        user_id AS ""UserId"",
+                        room_id AS ""RoomId"",
+                        booking_date AS ""BookingDate"",
+                        start_time AS ""StartTime"",
+                        end_time AS ""EndTime"",
+                        num_people AS ""NumPeople"",
+                        title AS ""Title"",
+                        requester_name AS ""RequesterName"",
+                        requester_division AS ""RequesterDivision"",
+                        description AS ""Description"",
+                        status AS ""Status"",
+                        approval_notes AS ""ApprovalNotes"",
+                        approved_by_admin_id AS ""ApprovedByAdminId"",
+                        created_at AS ""CreatedAt"",
+                        updated_at AS ""UpdatedAt""
+                    FROM bookings
+                    WHERE booking_date = @Date ORDER BY start_time";
+
+                return await connection.QueryAsync<Booking>(
+                    query, 
+                    new { Date = date });
             }
         }
 
@@ -127,6 +236,41 @@ namespace PeminjamanRuangAPI.Repositories
                 const string query = "UPDATE bookings SET status = 'CANCELLED', updated_at = NOW() WHERE id = @Id";
                 var result = await connection.ExecuteAsync(query, new { Id = bookingId });
                 return result > 0;
+            }
+        }
+
+        public async Task<bool> HasBookingConflictAsync(
+            int roomId, 
+            DateOnly bookingDate, 
+            TimeOnly startTime, 
+            TimeOnly endTime,
+            int? excludebookingId = null)
+        {
+            using (var connection = _dbConnection.CreateConnection())
+            {
+                const string query = @"
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM bookings
+                        WHERE room_id = @RoomId
+                            AND booking_date = @BookingDate
+                            AND status IN ('PENDING', 'APPROVED')
+                            AND (@ExcludeBookingId IS NULL OR id != @ExcludeBookingId)
+                            AND start_time < @EndTime
+                            AND end_time > @StartTime
+                        )";
+
+            return await connection.ExecuteScalarAsync<bool>(
+                query, 
+                new 
+                { 
+                    RoomId = roomId, 
+                    BookingDate = bookingDate, 
+                    StartTime = startTime, 
+                    EndTime = endTime,
+                    ExcludeBookingId = excludebookingId
+                });
+
             }
         }
     }

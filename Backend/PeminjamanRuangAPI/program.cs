@@ -22,6 +22,8 @@ builder.Services.AddScoped<IRoomRepository, RoomRepository>();
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
 builder.Services.AddScoped<IFacilityRepository, FacilityRepository>();
+builder.Services.AddScoped< IBookingCancellationRepository, BookingCancellationRepository>();
+
 
 // Register Services
 builder.Services.AddScoped<PasswordService>();
