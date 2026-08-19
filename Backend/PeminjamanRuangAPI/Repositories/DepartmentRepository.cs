@@ -26,7 +26,7 @@ namespace PeminjamanRuangAPI.Repositories
             }
         }
 
-        public async Task<Department> GetDepartmentByIdAsync(int id)
+        public async Task<Department?> GetDepartmentByIdAsync(int id)
         {
             using (var connection = _dbConnection.CreateConnection())
             {
