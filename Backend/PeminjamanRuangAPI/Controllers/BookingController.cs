@@ -573,5 +573,85 @@ namespace PeminjamanRuangAPI.Controllers
                 message = "Booking berhasil dibatalkan."
             });
         }
+
+        [HttpGet("status/{status}")]
+        [Authorize(Roles = "ADMIN")]
+        public async Task<ActionResult<IEnumerable<BookingResponseDto>>> GetBookingsByStatus(
+            string status)
+        {
+            var allowedStatuses = new[] 
+            { 
+                "PENDING", 
+                "APPROVED", 
+                "REJECTED", 
+                "CANCELLED" 
+            };
+
+            var normalizedStatus = status.ToUpperInvariant();
+
+            if (!allowedStatuses.Contains(normalizedStatus))
+            {
+                return BadRequest(new
+                {
+                    message = "Status tidak valid"
+                });
+            }
+
+            var bookings = await _bookingRepository
+                .GetBookingsByStatusAsync(normalizedStatus);
+
+            var response = bookings.Select(booking => new BookingResponseDto
+            {
+                Id = booking.Id,
+                UserId = booking.UserId,
+                RoomId = booking.RoomId,
+                BookingDate = booking.BookingDate,
+                StartTime = booking.StartTime,
+                EndTime = booking.EndTime,
+                NumPeople = booking.NumPeople,
+                Title = booking.Title,
+                RequesterName = booking.RequesterName,
+                RequesterDivision = booking.RequesterDivision,
+                Description = booking.Description,
+                Status = booking.Status,
+                ApprovalNotes = booking.ApprovalNotes,
+                ApprovedByAdminId = booking.ApprovedByAdminId,
+                CreatedAt = booking.CreatedAt,
+                UpdatedAt = booking.UpdatedAt
+            });
+
+            return Ok(response);
+        }
+
+        [HttpGet("date/{date}")]
+        [Authorize(Roles = "ADMIN")]
+        public async Task<ActionResult<IEnumerable<BookingResponseDto>>> GetBookingsByDate(
+            DateOnly date)
+        {
+            var bookings = await _bookingRepository
+                .GetBookingsByDateAsync(date);
+
+            var response = bookings.Select(booking => new BookingResponseDto
+            {
+                Id = booking.Id,
+                UserId = booking.UserId,
+                RoomId = booking.RoomId,
+                BookingDate = booking.BookingDate,
+                StartTime = booking.StartTime,
+                EndTime = booking.EndTime,
+                NumPeople = booking.NumPeople,
+                Title = booking.Title,
+                RequesterName = booking.RequesterName,
+                RequesterDivision = booking.RequesterDivision,
+                Description = booking.Description,
+                Status = booking.Status,
+                ApprovalNotes = booking.ApprovalNotes,
+                ApprovedByAdminId = booking.ApprovedByAdminId,
+                CreatedAt = booking.CreatedAt,
+                UpdatedAt = booking.UpdatedAt
+            });
+
+            return Ok(response);
+        }
     }
 }
