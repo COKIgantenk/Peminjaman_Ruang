@@ -207,10 +207,21 @@ namespace PeminjamanRuangAPI.Repositories
             {
                 const string query = @"
                     UPDATE bookings 
-                    SET status = 'APPROVED', approved_by_admin_id = @AdminId, updated_at = NOW()
-                    WHERE id = @Id";
+                    SET 
+                        status = 'APPROVED', 
+                        approved_by_admin_id = @AdminId, 
+                        updated_at = NOW()
+                    WHERE id = @BookingId
+                        AND status = 'PENDING'";
                 
-                var result = await connection.ExecuteAsync(query, new { Id = bookingId, AdminId = adminId });
+                var result = await connection.ExecuteAsync(
+                    query, 
+                    new 
+                    {
+                        BookingId = bookingId,
+                        AdminId = adminId
+                    });  
+                      
                 return result > 0;
             }
         }
