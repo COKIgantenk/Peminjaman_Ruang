@@ -221,21 +221,37 @@ namespace PeminjamanRuangAPI.Repositories
                         BookingId = bookingId,
                         AdminId = adminId
                     });  
-                      
+
                 return result > 0;
             }
         }
 
-        public async Task<bool> RejectBookingAsync(int bookingId, int adminId, string reason)
+        public async Task<bool> RejectBookingAsync(
+            int bookingId, 
+            int adminId, 
+            string reason)
         {
             using (var connection = _dbConnection.CreateConnection())
             {
                 const string query = @"
                     UPDATE bookings 
-                    SET status = 'REJECTED', approval_notes = @Reason, approved_by_admin_id = @AdminId, updated_at = NOW()
-                    WHERE id = @Id";
+                    SET 
+                        status = 'REJECTED', 
+                        approval_notes = @Reason, 
+                        approved_by_admin_id = @AdminId, 
+                        updated_at = NOW()
+                    WHERE id = @BookingId
+                        AND status = 'PENDING'";
                 
-                var result = await connection.ExecuteAsync(query, new { Id = bookingId, AdminId = adminId, Reason = reason });
+                var result = await connection.ExecuteAsync(
+                    query, 
+                    new 
+                    { 
+                        BookingId = bookingId, 
+                        AdminId = adminId, 
+                        Reason = reason 
+                    });
+                    
                 return result > 0;
             }
         }

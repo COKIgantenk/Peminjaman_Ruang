@@ -429,6 +429,66 @@ namespace PeminjamanRuangAPI.Controllers
                 message = "Booking berhasil disetujui."
             });
         }
-        
+
+        [HttpPut("{id}/reject")]
+        [Authorize(Roles = "ADMIN")]
+        public async Task<ActionResult> RejectBooking(
+            int id, 
+            [FromBody] RejectBookingRequestDto request)
+        {
+            var booking = await _bookingRepository.GetBookingByIdAsync(id);
+
+            if (booking == null)
+            {
+                return NotFound(new
+                {
+                    message = "Booking tidak ditemukan."
+                });
+            }
+
+            if (booking.Status != "PENDING")
+            {
+                return BadRequest(new
+                {
+                    message = "Hanya booking dengan status PENDING yang dapat ditolak."
+                });
+            }
+
+            if (string.IsNullOrWhiteSpace(request.Reason))
+            {
+                return BadRequest(new
+                {
+                    message = "Alasan penolakan harus diisi."
+                });
+            }
+
+            var adminIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (!int.TryParse(adminIdClaim, out int adminId))
+            {
+                return Unauthorized(new
+                {
+                    message = "Token admin tidak valid."
+                });
+            }
+
+            var success = await _bookingRepository.RejectBookingAsync(
+                id, 
+                adminId,
+                request.Reason.Trim());
+
+            if (!success)
+            {
+                return BadRequest(new
+                {
+                    message = "Booking gagal ditolak."
+                });
+            }
+
+            return Ok(new
+            {
+                message = "Booking berhasil ditolak."
+            });
+        }
     }
 }
