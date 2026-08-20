@@ -27,6 +27,7 @@ builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
 builder.Services.AddScoped<IFacilityRepository, FacilityRepository>();
 builder.Services.AddScoped< IBookingCancellationRepository, BookingCancellationRepository>();
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 
 
 // Register Services
