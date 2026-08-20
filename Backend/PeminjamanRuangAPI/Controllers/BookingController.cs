@@ -16,15 +16,18 @@ namespace PeminjamanRuangAPI.Controllers
         private readonly IBookingRepository _bookingRepository;
         private readonly IRoomRepository _roomRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IBookingCancellationRepository _bookingCancellationRepository;
 
         public BookingController(
             IBookingRepository bookingRepository,
             IRoomRepository roomRepository,
-            IUserRepository userRepository)
+            IUserRepository userRepository,
+            IBookingCancellationRepository bookingCancellationRepository)
         {
             _bookingRepository = bookingRepository;
             _roomRepository = roomRepository;
             _userRepository = userRepository;
+            _bookingCancellationRepository = bookingCancellationRepository;
         }
 
         [HttpPost]
@@ -488,6 +491,86 @@ namespace PeminjamanRuangAPI.Controllers
             return Ok(new
             {
                 message = "Booking berhasil ditolak."
+            });
+        }
+
+        [HttpPut("{id}/cancel")]
+        public async Task<ActionResult> CancelBooking(
+            int id, 
+            [FromBody] CancelBookingRequestDto request)
+        {
+            var booking = await _bookingRepository.GetBookingByIdAsync(id);
+
+            if (booking == null)
+            {
+                return NotFound(new
+                {
+                    message = "Booking tidak ditemukan."
+                });
+            }
+
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (!int.TryParse(userIdClaim, out int userId))
+            {
+                return Unauthorized(new
+                {
+                    message = "Token user tidak valid."
+                });
+            }
+
+            if (booking.UserId != userId)
+            {
+                return Forbid();
+            }
+
+            if (booking.Status!= "PENDING" && booking.Status != "APPROVED")
+            {
+                return BadRequest(new
+                {
+                    message = "Hanya booking dengan status PENDING atau APPROVED yang dapat dibatalkan."
+                });
+            }
+
+            if (string.IsNullOrWhiteSpace(request.Reason))
+            {
+                return BadRequest(new
+                {
+                    message = "Alasan pembatalan harus diisi."
+                });
+            }
+
+            var cancellation = new BookingCancellation
+            {
+                BookingId = id,
+                CancellationReason = request.Reason.Trim(),
+                CancelledByUserId = userId,
+            };
+
+            var cancellationSaved =
+                await _bookingCancellationRepository.CreateCancellationAsync(cancellation); 
+
+            if (!cancellationSaved)
+            {
+                return BadRequest(new
+                {
+                    message = "Gagal menyimpan alasan pembatalan."
+                });
+            }
+
+            var cancelled = await _bookingRepository.CancelBookingAsync(id);
+
+            if (!cancelled)
+            {
+                return BadRequest(new
+                {
+                    message = "Gagal membatalkan booking."
+                });
+            }
+
+            return Ok(new
+            {
+                message = "Booking berhasil dibatalkan."
             });
         }
     }

@@ -27,7 +27,7 @@ namespace PeminjamanRuangAPI.Repositories
                     cancellation_reason AS ""CancellationReason"",
                     cancelled_by_user_id AS ""CancelledByUserId"",
                     cancelled_at AS ""CancelledAt""
-                FROM booking_cancellations
+                FROM booking_cancellation
                 WHERE booking_id = @BookingId";
 
             return await connection
@@ -42,7 +42,7 @@ namespace PeminjamanRuangAPI.Repositories
             using var connection = _dbConnection.CreateConnection();
 
             const string query = @"
-                INSERT INTO booking_cancellations
+                INSERT INTO booking_cancellation
                 (
                     booking_id,
                     cancellation_reason,

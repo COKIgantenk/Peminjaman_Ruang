@@ -251,7 +251,7 @@ namespace PeminjamanRuangAPI.Repositories
                         AdminId = adminId, 
                         Reason = reason 
                     });
-                    
+
                 return result > 0;
             }
         }
@@ -260,8 +260,18 @@ namespace PeminjamanRuangAPI.Repositories
         {
             using (var connection = _dbConnection.CreateConnection())
             {
-                const string query = "UPDATE bookings SET status = 'CANCELLED', updated_at = NOW() WHERE id = @Id";
-                var result = await connection.ExecuteAsync(query, new { Id = bookingId });
+                const string query = @"
+                    UPDATE bookings 
+                    SET 
+                        status = 'CANCELLED', 
+                        updated_at = NOW()
+                    WHERE id = @Id
+                        AND status IN ('PENDING', 'APPROVED')";
+
+                var result = await connection.ExecuteAsync(
+                    query, 
+                    new { Id = bookingId });
+                    
                 return result > 0;
             }
         }
