@@ -25,6 +25,8 @@ namespace PeminjamanRuangAPI.Repositories
                     notification_type AS ""NotificationType"",
                     email_sent AS ""EmailSent"",
                     sent_at AS ""SentAt"",
+                    is_read AS ""IsRead"",
+                    read_at AS ""ReadAt"",
                     created_at AS ""CreatedAt""
                 FROM notifications
                 WHERE user_id = @UserId
@@ -47,6 +49,8 @@ namespace PeminjamanRuangAPI.Repositories
                     notification_type AS ""NotificationType"",
                     email_sent AS ""EmailSent"",
                     sent_at AS ""SentAt"",
+                    is_read AS ""IsRead"",
+                    read_at AS ""ReadAt"",
                     created_at AS ""CreatedAt""
                 FROM notifications
                 WHERE id = @Id";
@@ -83,6 +87,29 @@ namespace PeminjamanRuangAPI.Repositories
             var result = await connection.ExecuteAsync(
                 query,
                 notification);
+
+            return result > 0;
+        }
+
+        public async Task<bool> MarkAsReadAsync(int notificationId, int userId)
+        {
+            using var connection = _dbConnection.CreateConnection();
+
+            const string query = @"
+                UPDATE notifications
+                SET 
+                    is_read = TRUE,
+                    read_at = NOW()
+                WHERE id = @NotificationId 
+                  AND user_id = @UserId";
+
+            var result = await connection.ExecuteAsync(
+                query,
+                new 
+                { 
+                    NotificationId = notificationId, 
+                    UserId = userId 
+                });
 
             return result > 0;
         }

@@ -167,20 +167,52 @@ namespace PeminjamanRuangAPI.Repositories
             }
         }
 
-        public async Task<bool> CreateBookingAsync(Booking booking)
+        public async Task<int> CreateBookingAsync(Booking booking)
         {
             using (var connection = _dbConnection.CreateConnection())
             {
                 const string query = @"
-                    INSERT INTO bookings (user_id, room_id, booking_date, start_time, end_time, num_people, 
-                                         title, requester_name, requester_division, description, status, 
-                                         approval_notes, approved_by_admin_id, created_at, updated_at)
-                    VALUES (@UserId, @RoomId, @BookingDate, @StartTime, @EndTime, @NumPeople, 
-                            @Title, @RequesterName, @RequesterDivision, @Description, @Status, 
-                            @ApprovalNotes, @ApprovedByAdminId, NOW(), NOW())";
+                    INSERT INTO bookings
+                    (
+                        user_id,
+                        room_id,
+                        booking_date,
+                        start_time,
+                        end_time,
+                        num_people,
+                        title,
+                        requester_name,
+                        requester_division,
+                        description,
+                        status,
+                        approval_notes,
+                        approved_by_admin_id,
+                        created_at,
+                        updated_at
+                    )
+                    VALUES
+                    (
+                        @UserId,
+                        @RoomId,
+                        @BookingDate,
+                        @StartTime,
+                        @EndTime,
+                        @NumPeople,
+                        @Title,
+                        @RequesterName,
+                        @RequesterDivision,
+                        @Description,
+                        @Status,
+                        @ApprovalNotes,
+                        @ApprovedByAdminId,
+                        NOW(),
+                        NOW()
+                    )
+                    RETURNING id";
                 
-                var result = await connection.ExecuteAsync(query, booking);
-                return result > 0;
+                return await connection.ExecuteScalarAsync<int>(
+                    query, 
+                    booking);
             }
         }
 
@@ -271,7 +303,7 @@ namespace PeminjamanRuangAPI.Repositories
                 var result = await connection.ExecuteAsync(
                     query, 
                     new { Id = bookingId });
-                    
+
                 return result > 0;
             }
         }

@@ -8,6 +8,9 @@ namespace PeminjamanRuangAPI.Models
         public required string NotificationType { get; set; } // BOOKING_APPROVED, BOOKING_REJECTED, BOOKING_CANCELLED
         public bool EmailSent { get; set; }
         public DateTime? SentAt { get; set; }
+        public bool IsRead { get; set; }
+        public DateTime? ReadAt { get; set; }
         public DateTime CreatedAt { get; set; }
+        
     }
 }

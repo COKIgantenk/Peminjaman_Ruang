@@ -17,17 +17,20 @@ namespace PeminjamanRuangAPI.Controllers
         private readonly IRoomRepository _roomRepository;
         private readonly IUserRepository _userRepository;
         private readonly IBookingCancellationRepository _bookingCancellationRepository;
+        private readonly INotificationRepository _notificationRepository;
 
         public BookingController(
             IBookingRepository bookingRepository,
             IRoomRepository roomRepository,
             IUserRepository userRepository,
-            IBookingCancellationRepository bookingCancellationRepository)
+            IBookingCancellationRepository bookingCancellationRepository,
+            INotificationRepository notificationRepository)
         {
             _bookingRepository = bookingRepository;
             _roomRepository = roomRepository;
             _userRepository = userRepository;
             _bookingCancellationRepository = bookingCancellationRepository;
+            _notificationRepository = notificationRepository;
         }
 
         [HttpPost]
@@ -128,14 +131,32 @@ namespace PeminjamanRuangAPI.Controllers
                 ApprovedByAdminId = null
             };
 
-            var success = await _bookingRepository.CreateBookingAsync(booking);
+            var bookingId = await _bookingRepository.CreateBookingAsync(booking);
 
-            if (!success)
+            if (bookingId <= 0)
             {
                 return BadRequest(new
                 {
                     message = "Booking gagal dibuat."
                 });
+            }
+
+            booking.Id = bookingId;
+
+            var admins = await _userRepository.GetUsersByRoleAsync("ADMIN");
+
+            foreach (var admin in admins)
+            {
+                var notification = new Notification
+                {
+                    UserId = admin.Id,
+                    BookingId = booking.Id,
+                    NotificationType = "BOOKING_PENDING",
+                    EmailSent = false,
+                    SentAt = null,
+                };
+
+                await _notificationRepository.CreateNotificationAsync(notification);
             }
 
             return Ok(new
@@ -249,9 +270,9 @@ namespace PeminjamanRuangAPI.Controllers
                     
             };
 
-            var success = await _bookingRepository.CreateBookingAsync(booking);
+            var bookingId = await _bookingRepository.CreateBookingAsync(booking);
 
-            if (!success)
+            if (bookingId <= 0)
             {
                 return BadRequest(new
                 {
@@ -300,7 +321,7 @@ namespace PeminjamanRuangAPI.Controllers
                 UpdatedAt = booking.UpdatedAt
             });
 
-            return Ok(bookings);
+            return Ok(response);
         }
 
         [HttpGet("{id}")]
@@ -427,6 +448,26 @@ namespace PeminjamanRuangAPI.Controllers
                 });
             }
 
+            var notification = new Notification
+            {
+                UserId = booking.UserId,
+                BookingId = booking.Id,
+                NotificationType = "BOOKING_APPROVED",
+                EmailSent = false,
+                SentAt = null,
+            };
+
+            var notificationCreated =
+                await _notificationRepository.CreateNotificationAsync(notification);
+
+            if (!notificationCreated)
+            {
+                return BadRequest(new
+                {
+                    message = "Booking berhasil disetujui, tetapi gagal membuat notifikasi."
+                });
+            }
+
             return Ok(new
             {
                 message = "Booking berhasil disetujui."
@@ -485,6 +526,26 @@ namespace PeminjamanRuangAPI.Controllers
                 return BadRequest(new
                 {
                     message = "Booking gagal ditolak."
+                });
+            }
+
+            var notification = new Notification
+            {
+                UserId = booking.UserId,
+                BookingId = booking.Id,
+                NotificationType = "BOOKING_REJECTED",
+                EmailSent = false,
+                SentAt = null,
+            };
+
+            var notificationCreated =
+                await _notificationRepository.CreateNotificationAsync(notification);
+
+            if (!notificationCreated)
+            {
+                return BadRequest(new
+                {
+                    message = "Booking berhasil ditolak, tetapi gagal membuat notifikasi."
                 });
             }
 
@@ -565,6 +626,26 @@ namespace PeminjamanRuangAPI.Controllers
                 return BadRequest(new
                 {
                     message = "Gagal membatalkan booking."
+                });
+            }
+
+            var notification = new Notification
+            {
+                UserId = booking.UserId,
+                BookingId = booking.Id,
+                NotificationType = "BOOKING_CANCELLED",
+                EmailSent = false,
+                SentAt = null,
+            };
+
+            var notificationCreated =
+                await _notificationRepository.CreateNotificationAsync(notification);
+
+            if (!notificationCreated)
+            {
+                return BadRequest(new
+                {
+                    message = "Booking berhasil dibatalkan, tetapi gagal membuat notifikasi."
                 });
             }
 

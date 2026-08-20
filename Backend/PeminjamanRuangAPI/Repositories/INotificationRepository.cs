@@ -9,5 +9,7 @@ namespace PeminjamanRuangAPI.Repositories
         Task<Notification?> GetNotificationByIdAsync(int id);
 
         Task<bool> CreateNotificationAsync(Notification notification);
+
+        Task<bool> MarkAsReadAsync(int notificationId, int userId);
     }
 }

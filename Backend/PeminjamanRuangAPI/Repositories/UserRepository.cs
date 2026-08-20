@@ -143,5 +143,35 @@ namespace PeminjamanRuangAPI.Repositories
                 return count > 0;
             }
         }
+
+        public async Task<IEnumerable<User>> GetUsersByRoleAsync(string role)
+        {
+            using (var connection = _dbConnection.CreateConnection())
+            {
+                const string query = @"
+                    SELECT
+                        id AS ""Id"",
+                        email AS ""Email"",
+                        password_hash AS ""PasswordHash"",
+                        full_name AS ""FullName"",
+                        phone_number AS ""PhoneNumber"",
+                        department_id AS ""DepartmentId"",
+                        role AS ""Role"",
+                        is_active AS ""IsActive"",
+                        last_login AS ""LastLogin"",
+                        created_at AS ""CreatedAt"",
+                        updated_at AS ""UpdatedAt"",
+                        deleted_at AS ""DeletedAt""
+                    FROM users
+                    WHERE role = @Role
+                     AND is_active = true
+                     AND deleted_at IS NULL
+                    ORDER BY id";
+
+                return await connection.QueryAsync<User>(
+                    query, 
+                    new { Role = role });
+            }
+        }
     }
 }
