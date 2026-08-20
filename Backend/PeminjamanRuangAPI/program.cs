@@ -6,8 +6,12 @@ using PeminjamanRuangAPI.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using PeminjamanRuangAPI.Data.TypeHandlers;
 
 var builder = WebApplication.CreateBuilder(args);
+
+SqlMapper.AddTypeHandler(new DateOnlyTypeHandler());
+SqlMapper.AddTypeHandler(new TimeOnlyTypeHandler());
 
 // Add services to the container.
 builder.Services.AddRazorPages();
