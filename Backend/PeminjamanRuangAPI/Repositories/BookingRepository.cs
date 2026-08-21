@@ -342,5 +342,55 @@ namespace PeminjamanRuangAPI.Repositories
 
             }
         }
+
+        public async Task<bool> IsRoomCurrentlyInUseAsync(int roomId)
+        {
+            using var connection = _dbConnection.CreateConnection();
+
+            const string query = @"
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM bookings
+                    WHERE room_id = @RoomId
+                        AND status = 'APPROVED'
+                        AND booking_date = CURRENT_DATE
+                        AND start_time <= CURRENT_TIME
+                        AND end_time > CURRENT_TIME
+                )";
+
+            return await connection.ExecuteScalarAsync<bool>(
+                query,
+                new { RoomId = roomId });
+        }
+
+        public async Task<bool> HasBookingConflictInDateRangeAsync(
+            int roomId,
+            DateOnly startDate,
+            DateOnly? endDate)
+        {
+            using var connection = _dbConnection.CreateConnection();
+
+            var effectiveEndDate = endDate ?? startDate;
+
+            const string query = @"
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM bookings
+                    WHERE room_id = @RoomId
+                        AND status IN ('PENDING', 'APPROVED')
+                        AND booking_date >= @StartDate
+                        AND booking_date <= @EndDate
+                )";
+
+            return await connection.ExecuteScalarAsync<bool>(
+                query,
+                new
+                {
+                    RoomId = roomId,
+                    StartDate = startDate,
+                    EndDate = effectiveEndDate
+                });   
+                 
+        }
     }
 }

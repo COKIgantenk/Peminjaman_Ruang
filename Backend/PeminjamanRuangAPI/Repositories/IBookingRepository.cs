@@ -20,5 +20,10 @@ namespace PeminjamanRuangAPI.Repositories
             TimeOnly startTime, 
             TimeOnly endTime,
             int? excludebookingId = null);
+        Task<bool> IsRoomCurrentlyInUseAsync(int roomId);
+        Task<bool> HasBookingConflictInDateRangeAsync(
+            int roomId,
+            DateOnly StartDate,
+            DateOnly? EndDate);    
     }
 }

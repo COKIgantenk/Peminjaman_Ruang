@@ -1,10 +1,10 @@
-namespace PeminjamanRuangAPI.Models
+namespace PeminjamanRuangAPI.DTOs
 {
-    public class RoomStatusHistory
+    public class RoomStatusHistoryResponseDto
     {
         public int Id { get; set; }
         public int RoomId { get; set; }
-        public required string Status { get; set; } // ACTIVE, OUT_OF_SERVICE, MAINTENANCE, CLEANING
+        public string Status { get; set; } = string.Empty;
         public string? Reason { get; set; }
         public int? ChangedByAdminId { get; set; }
         public DateTime CreatedAt { get; set; }
