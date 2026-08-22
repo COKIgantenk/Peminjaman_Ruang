@@ -13,5 +13,14 @@ namespace PeminjamanRuangAPI.Repositories
         Task<int> CreateMaintenanceAsync(Maintenance maintenance);
 
         Task<bool> CompleteMaintenanceAsync(int id);
+
+        Task<int> CreateMaintenanceWithStatusAsync(
+            Maintenance maintenance,
+            string reason);
+
+        Task<bool> CompleteMaintenanceWithStatusAsync(
+            int maintenanceId,
+            int roomId,
+            int adminId);
     }
 }

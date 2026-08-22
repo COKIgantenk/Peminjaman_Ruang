@@ -15,18 +15,15 @@ namespace PeminjamanRuangAPI.Controllers
         private readonly IMaintenanceRepository _maintenanceRepository;
         private readonly IRoomRepository _roomRepository;
         private readonly IBookingRepository _bookingRepository;
-        private readonly IRoomStatusHistoryRepository _roomStatusRepository;
 
         public MaintenanceController(
             IMaintenanceRepository maintenanceRepository,
             IRoomRepository roomRepository,
-            IBookingRepository bookingRepository,
-            IRoomStatusHistoryRepository roomStatusRepository)
+            IBookingRepository bookingRepository)
         {
             _maintenanceRepository = maintenanceRepository;
             _roomRepository = roomRepository;
             _bookingRepository = bookingRepository;
-            _roomStatusRepository = roomStatusRepository;
         }
 
         [HttpPost]
@@ -131,29 +128,15 @@ namespace PeminjamanRuangAPI.Controllers
             };
 
             var maintenanceId =
-                await _maintenanceRepository
-                    .CreateMaintenanceAsync(maintenance);
+                await _maintenanceRepository.CreateMaintenanceWithStatusAsync(
+                    maintenance,
+                    request.Description.Trim());
 
             if (maintenanceId <= 0)
             {
                 return BadRequest(new
                 {
                     message = "Maintenance gagal dibuat."
-                });
-            }
-
-            var statusChanged =
-                await _roomStatusRepository.ChangeRoomStatusAsync(
-                    request.RoomId,
-                    "MAINTENANCE",
-                    request.Description.Trim(),
-                    adminId);
-
-            if (!statusChanged)
-            {
-                return BadRequest(new
-                {
-                    message = "Maintenance berhasil dibuat tetapi status room gagal diperbarui."
                 });
             }
 
@@ -191,10 +174,10 @@ namespace PeminjamanRuangAPI.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<MaintenanceResponseDto>> GetMaintenance (int Id)
+        public async Task<ActionResult<MaintenanceResponseDto>> GetMaintenance (int id)
         {
             var maintenance =
-                await _maintenanceRepository.GetMaintenanceByIdAsync(Id);
+                await _maintenanceRepository.GetMaintenanceByIdAsync(id);
 
             if (maintenance == null)
             {
@@ -257,28 +240,17 @@ namespace PeminjamanRuangAPI.Controllers
             }
         
             var completed =
-                await _maintenanceRepository.CompleteMaintenanceAsync(id);
+                await _maintenanceRepository
+                    .CompleteMaintenanceWithStatusAsync(
+                        id,
+                        maintenance.RoomId,
+                        adminId);
         
             if (!completed)
             {
                 return BadRequest(new
                 {
                     message = "Gagal menyelesaikan maintenance."
-                });
-            }
-        
-            var statusChanged =
-                await _roomStatusRepository.ChangeRoomStatusAsync(
-                    maintenance.RoomId,
-                    "ACTIVE",
-                    "Maintenance selesai.",
-                    adminId);
-        
-            if (!statusChanged)
-            {
-                return BadRequest(new
-                {
-                    message = "Maintenance selesai tetapi status room gagal diperbarui."
                 });
             }
         
