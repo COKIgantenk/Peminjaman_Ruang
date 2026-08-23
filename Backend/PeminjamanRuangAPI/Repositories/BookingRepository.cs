@@ -392,5 +392,46 @@ namespace PeminjamanRuangAPI.Repositories
                 });   
                  
         }
+
+        public async Task<IEnumerable<Booking>> GetFinishedBookingsWithoutCleaningAsync()
+        {
+            using var connection = _dbConnection.CreateConnection();
+
+            const string query = @"
+                SELECT
+                    b.id AS ""Id"",
+                    b.user_id AS ""UserId"",
+                    b.room_id AS ""RoomId"",
+                    b.booking_date AS ""BookingDate"",
+                    b.start_time AS ""StartTime"",
+                    b.end_time AS ""EndTime"",
+                    b.num_people AS ""NumPeople"",
+                    b.title AS ""Title"",
+                    b.requester_name AS ""RequesterName"",
+                    b.requester_division AS ""RequesterDivision"",
+                    b.description AS ""Description"",
+                    b.status AS ""Status"",
+                    b.approval_notes AS ""ApprovalNotes"",
+                    b.approved_by_admin_id AS ""ApprovedByAdminId"",
+                    b.created_at AS ""CreatedAt"",
+                    b.updated_at AS ""UpdatedAt""
+                FROM bookings b
+                WHERE b.status = 'APPROVED'
+                  AND (
+                        b.booking_date < CURRENT_DATE
+                        OR (
+                            b.booking_date = CURRENT_DATE
+                            AND b.end_time <= CURRENT_TIME
+                        )
+                      )
+                  AND NOT EXISTS (
+                        SELECT 1
+                        FROM room_cleaning_session rcs
+                        WHERE rcs.booking_id = b.id
+                  )
+                ORDER BY b.booking_date, b.end_time";
+
+            return await connection.QueryAsync<Booking>(query);
+        }
     }
 }

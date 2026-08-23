@@ -30,10 +30,12 @@ builder.Services.AddScoped< IBookingCancellationRepository, BookingCancellationR
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<IRoomStatusHistoryRepository, RoomStatusHistoryRepository>();
 builder.Services.AddScoped<IMaintenanceRepository, MaintenanceRepository>();
+builder.Services.AddScoped<IRoomCleaningSessionRepository, RoomCleaningSessionRepository>();
 
 
 // Register Services
 builder.Services.AddScoped<PasswordService>();
+builder.Services.AddHostedService<BookingCleaningBackgroundService>();
 
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection("JwtSettings")

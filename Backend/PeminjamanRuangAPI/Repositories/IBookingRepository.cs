@@ -9,6 +9,7 @@ namespace PeminjamanRuangAPI.Repositories
         Task<IEnumerable<Booking>> GetUserBookingsAsync(int userId);
         Task<IEnumerable<Booking>> GetBookingsByStatusAsync(string status);
         Task<IEnumerable<Booking>> GetBookingsByDateAsync(DateOnly date);
+        Task<IEnumerable<Booking>> GetFinishedBookingsWithoutCleaningAsync();
         Task<int> CreateBookingAsync(Booking booking);
         Task<bool> UpdateBookingAsync(Booking booking);
         Task<bool> ApproveBookingAsync(int bookingId, int adminId);
