@@ -54,10 +54,25 @@ namespace PeminjamanRuangAPI.Controllers
             {
                 return BadRequest(new
                 {
-                    message = "Tanggal selesai maintenance tidak boleh sebelum tanggal mulai."
+                    message = "Tanggal selesai Maintenance tidak boleh sebelum tanggal mulai."
                 });
             }
 
+            var maintenanceConflict =
+                await _maintenanceRepository
+                    .HasMaintenanceScheduleConflictAsync(
+                        request.RoomId,
+                        request.StartDate,
+                        request.EndDate);
+
+            if (maintenanceConflict)
+            {
+                return Conflict(new
+                {
+                    message = "Room sudah memiliki jadwal maintenance pada tanggal tersebut."
+                });
+            }
+            
             var allowedPriorities = new[]
             {
                 "LOW",
@@ -167,7 +182,8 @@ namespace PeminjamanRuangAPI.Controllers
                     StartDate = maintenance.StartDate,
                     EndDate = maintenance.EndDate,
                     CreatedAt = maintenance.CreatedAt,
-                    CompletedAt = maintenance.CompletedAt
+                    CompletedAt = maintenance.CompletedAt,
+                    ActivatedAt = maintenance.ActivatedAt
                 });
             
             return Ok(response);
@@ -200,7 +216,8 @@ namespace PeminjamanRuangAPI.Controllers
                 StartDate = maintenance.StartDate,
                 EndDate = maintenance.EndDate,
                 CreatedAt = maintenance.CreatedAt,
-                CompletedAt = maintenance.CompletedAt
+                CompletedAt = maintenance.CompletedAt,
+                ActivatedAt = maintenance.ActivatedAt
             };
 
             return Ok(response);
@@ -225,6 +242,14 @@ namespace PeminjamanRuangAPI.Controllers
                 return BadRequest(new
                 {
                     message = "Maintenance sudah selesai sebelumnya."
+                });
+            }
+
+            if (maintenance.ActivatedAt == null)
+            {
+                return BadRequest(new
+                {
+                    message = "Maintenance belum dimulai dan tidak dapat diselesaikan"
                 });
             }
         

@@ -36,6 +36,7 @@ builder.Services.AddScoped<IRoomCleaningSessionRepository, RoomCleaningSessionRe
 // Register Services
 builder.Services.AddScoped<PasswordService>();
 builder.Services.AddHostedService<BookingCleaningBackgroundService>();
+builder.Services.AddHostedService<MaintenanceActivationBackgroundService>();
 
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection("JwtSettings")

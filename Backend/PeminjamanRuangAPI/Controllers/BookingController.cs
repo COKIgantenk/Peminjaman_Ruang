@@ -18,19 +18,22 @@ namespace PeminjamanRuangAPI.Controllers
         private readonly IUserRepository _userRepository;
         private readonly IBookingCancellationRepository _bookingCancellationRepository;
         private readonly INotificationRepository _notificationRepository;
+        private readonly IMaintenanceRepository _maintenanceRepository;
 
         public BookingController(
             IBookingRepository bookingRepository,
             IRoomRepository roomRepository,
             IUserRepository userRepository,
             IBookingCancellationRepository bookingCancellationRepository,
-            INotificationRepository notificationRepository)
+            INotificationRepository notificationRepository,
+            IMaintenanceRepository maintenanceRepository)
         {
             _bookingRepository = bookingRepository;
             _roomRepository = roomRepository;
             _userRepository = userRepository;
             _bookingCancellationRepository = bookingCancellationRepository;
             _notificationRepository = notificationRepository;
+            _maintenanceRepository = maintenanceRepository;
         }
 
         [HttpPost]
@@ -95,6 +98,31 @@ namespace PeminjamanRuangAPI.Controllers
                 return BadRequest(new
                 {
                     message = "Tanggal booking tidak boleh di masa lalu."
+                });
+            }
+
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            var currentTime = TimeOnly.FromDateTime(DateTime.Now);
+
+            if (request.BookingDate == today &&
+                request.StartTime <= currentTime)
+            {
+                return BadRequest(new
+                {
+                    message = "Waktu mulai booking harus lebih besar dari waktu saat ini"
+                });
+            }
+
+            var maintenanceConflict =
+                await _maintenanceRepository.HasMaintenanceConflictAsync(
+                    request.RoomId,
+                    request.BookingDate);
+
+            if (maintenanceConflict)
+            {
+                return Conflict(new
+                {
+                    message = "Room tidak tersedia karena terdapat jadwal maintenance pada tanggal tersebut."
                 });
             }
 
@@ -235,6 +263,31 @@ namespace PeminjamanRuangAPI.Controllers
                 return BadRequest(new
                 {
                     message = "Tanggal booking tidak boleh di masa lalu."
+                });
+            }
+
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            var currentTime = TimeOnly.FromDateTime(DateTime.Now);
+
+            if (request.BookingDate == today &&
+                request.StartTime <= currentTime)
+            {
+                return BadRequest(new
+                {
+                    message = "Waktu mulai booking harus lebih besar dari waktu saat ini"
+                });
+            }
+
+            var maintenanceConflict =
+                await _maintenanceRepository.HasMaintenanceConflictAsync(
+                    request.RoomId,
+                    request.BookingDate);
+
+            if (maintenanceConflict)
+            {
+                return Conflict(new
+                {
+                    message = "Room tidak tersedia karena terdapat jadwal maintenance pada tanggal tersebut."
                 });
             }
 

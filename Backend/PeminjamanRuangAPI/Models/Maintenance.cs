@@ -14,5 +14,6 @@ namespace PeminjamanRuangAPI.Models
         public DateOnly? EndDate { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? CompletedAt { get; set; }
+        public DateTime? ActivatedAt { get; set; }
     }
 }
