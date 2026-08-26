@@ -64,43 +64,58 @@ namespace PeminjamanRuangAPI.Repositories
             TimeSpan endTime, 
             int capacity)
         {
-            using (var connection = _dbConnection.CreateConnection())
-            {
+            using var connection = _dbConnection.CreateConnection();
+            
                 const string query = @"
-                    SELECT DISTINCT 
-                        r.id AS Id,
-                        r.name AS Name,
-                        r.location AS Location,
-                        r.capacity AS Capacity,
-                        r.description AS Description,
-                        r.image_url AS ImageUrl,
-                        r.is_active AS IsActive,
-                        r.created_at AS CreatedAt,
-                        r.updated_at AS UpdatedAt
+                    SELECT  
+                        r.id AS ""Id"",
+                        r.name AS ""Name"",
+                        r.location AS ""Location"",
+                        r.capacity AS ""Capacity"",
+                        r.description AS ""Description"",
+                        r.image_url AS ""ImageUrl"",
+                        r.is_active AS ""IsActive"",
+                        r.created_at AS ""CreatedAt"",
+                        r.updated_at AS ""UpdatedAt""
                     FROM rooms r
                     WHERE r.is_active = true
                         AND r.capacity >= @Capacity
-                        AND r.id NOT IN (
-                            SELECT room_id
-                            FROM bookings 
-                            WHERE booking_date = @BookingDate
-                                AND status IN ('Pending', 'Approved')
-                                AND not (
-                                    end_time <= @StartTime 
-                                    OR start_time >= @EndTime
+
+
+                        AND NOT EXISTS (
+                            SELECT 1
+                            FROM bookings b
+                            WHERE b.room_id = r.id
+                              AND b.booking_date = CAST (@BookingDate AS date)
+                              AND b.status IN ('PENDING', 'APPROVED')
+                              AND b.start_time < @EndTime
+                              AND b.end_time > @StartTime
+                        )
+
+                        AND NOT EXISTS (
+                            SELECT 1
+                            FROM maintenance m
+                            WHERE m.room_id = r.id
+                               AND m.completed_at IS NULL
+                               AND m.start_date <= CAST (@BookingDate AS date)
+                               AND (
+                                   m.end_date IS NULL
+                                   OR m.end_date >= CAST (@BookingDate AS date)
                                 )
                         )
-                    ORDER BY r.name";
+
+                        ORDER BY r.name";
                 
-                return await connection.QueryAsync<Room>(query, new 
+                return await connection.QueryAsync<Room>(
+                    query, 
+                    new 
                 { 
-                    BookingDate = bookingDate, 
+                    BookingDate = bookingDate.Date, 
                     StartTime = startTime, 
                     EndTime = endTime,
                     Capacity = capacity
                 });
             }
-        }
 
         public async Task<bool> CreateRoomAsync(Room room)
         {

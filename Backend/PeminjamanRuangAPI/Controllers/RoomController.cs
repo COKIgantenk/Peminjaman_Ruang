@@ -43,6 +43,63 @@ namespace PeminjamanRuangAPI.Controllers
             return Ok(response);
         }
 
+        [HttpGet("available")]
+        public async Task<ActionResult<IEnumerable<RoomResponseDto>>>
+            GetAvailableRooms(
+                [FromQuery] DateTime date,
+                [FromQuery] TimeSpan startTime,
+                [FromQuery] TimeSpan endTime,
+                [FromQuery] int capacity)
+
+        {
+            if (date.Date < DateTime.Today)
+            {
+                return BadRequest(new
+                {
+                    message = "Tanggal booking tidak boleh di masa lalu."
+                });
+            }
+
+            if (startTime >= endTime)
+            {
+                return BadRequest(new
+                {
+                    message = "Jam mulai harus lebih awal dari jam selesai."
+                });
+            }
+
+            if (capacity <= 0)
+            {
+                return BadRequest(new
+                {
+                    message = "Capacity harus lebih dari 0."
+                });
+            }
+
+            var rooms =
+                await _roomRepository.GetAvailableRoomsAsync(
+                    date,
+                    startTime,
+                    endTime,
+                    capacity);
+
+            var response = rooms.Select(room =>
+                new RoomResponseDto
+                {
+                    Id = room.Id,
+                    Name = room.Name,
+                    Location = room.Location,
+                    Capacity = room.Capacity,
+                    Description = room.Description,
+                    ImageUrl = room.ImageUrl,
+                    IsActive = room.IsActive,
+                    CreatedAt = room.CreatedAt,
+                    UpdatedAt = room.UpdatedAt
+                });
+
+            return Ok(response);
+        }
+
         [HttpGet("{id}")]
         public async Task<ActionResult<RoomResponseDto>> GetRoom(int id)
         {
