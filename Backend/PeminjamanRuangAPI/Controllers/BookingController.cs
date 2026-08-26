@@ -481,6 +481,53 @@ namespace PeminjamanRuangAPI.Controllers
                 });
             }
 
+            var room = await _roomRepository.GetRoomByIdAsync(booking.RoomId);
+
+            if (room == null)
+            {
+                return NotFound(new
+                {
+                    message = "Room tidak ditemukan"
+                });
+            }
+
+            if (!room.IsActive)
+            {
+                return Conflict(new
+                {
+                    message = "Booking tidak dapat disetujui karena room sedang tidak tersedia."
+                });
+            }
+
+            var maintenanceConflict =
+                await _maintenanceRepository.HasMaintenanceConflictAsync(
+                    booking.RoomId,
+                    booking.BookingDate);
+
+            if (maintenanceConflict)
+            {
+                return Conflict(new
+                {
+                    message = "Booking tidak dapat disetujui karena room memiliki jadwal maintenance."
+                });
+            }
+
+            var bookingConflict = 
+                await _bookingRepository.HasBookingConflictAsync(
+                    booking.RoomId,
+                    booking.BookingDate,
+                    booking.StartTime,
+                    booking.EndTime,
+                    booking.Id);
+
+            if (bookingConflict)
+            {
+                return Conflict(new
+                {
+                    message = "Booking tidak dapat disetujui karena terdapat booking lain pada waktu tersebut."
+                });
+            }
+
             var adminIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (!int.TryParse(adminIdClaim, out int adminId))
