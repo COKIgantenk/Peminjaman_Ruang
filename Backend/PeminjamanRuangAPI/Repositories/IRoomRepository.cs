@@ -10,7 +10,8 @@ namespace PeminjamanRuangAPI.Repositories
             DateTime bookingDate, 
             TimeSpan startTime, 
             TimeSpan endTime, 
-            int capacity);
+            int capacity,
+            int[]? facilityIds);
         Task<bool> CreateRoomAsync(Room room);
         Task<bool> UpdateRoomAsync(Room room);
         Task<bool> DeactivateRoomAsync(int id);

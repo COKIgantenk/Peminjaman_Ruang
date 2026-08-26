@@ -62,9 +62,17 @@ namespace PeminjamanRuangAPI.Repositories
             DateTime bookingDate, 
             TimeSpan startTime, 
             TimeSpan endTime, 
-            int capacity)
+            int capacity,
+            int[]? facilityIds)
         {
             using var connection = _dbConnection.CreateConnection();
+
+            var normalizedFacilityIds =
+                facilityIds?
+                    .Where(id => id > 0)
+                    .Distinct()
+                    .ToArray()
+                ?? Array.Empty<int>();
             
                 const string query = @"
                     SELECT  
@@ -104,6 +112,16 @@ namespace PeminjamanRuangAPI.Repositories
                                 )
                         )
 
+                        AND (
+                            @FacilityCount = 0
+                            OR (
+                                SELECT COUNT(DISTINCT rf.facility_id)
+                                FROM room_facilities rf
+                                WHERE rf.room_id = r.id
+                                  AND rf.facility_id = ANY(@FacilityIds)
+                                ) = @FacilityCount
+                            )
+
                         ORDER BY r.name";
                 
                 return await connection.QueryAsync<Room>(
@@ -113,7 +131,9 @@ namespace PeminjamanRuangAPI.Repositories
                     BookingDate = bookingDate.Date, 
                     StartTime = startTime, 
                     EndTime = endTime,
-                    Capacity = capacity
+                    Capacity = capacity,
+                    FacilityIds = normalizedFacilityIds,
+                    FacilityCount = normalizedFacilityIds.Length
                 });
             }
 

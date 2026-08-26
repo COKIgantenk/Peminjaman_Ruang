@@ -49,7 +49,8 @@ namespace PeminjamanRuangAPI.Controllers
                 [FromQuery] DateTime date,
                 [FromQuery] TimeSpan startTime,
                 [FromQuery] TimeSpan endTime,
-                [FromQuery] int capacity)
+                [FromQuery] int capacity,
+                [FromQuery] int[]? facilityIds)
 
         {
             if (date.Date < DateTime.Today)
@@ -76,12 +77,41 @@ namespace PeminjamanRuangAPI.Controllers
                 });
             }
 
+            var normalizedFacilityIds =
+                facilityIds?  
+                    .Distinct()
+                    .ToArray()
+                ?? Array.Empty<int>();
+
+            if(normalizedFacilityIds.Any(id => id <= 0))
+            {
+                return BadRequest(new
+                {
+                    message = "Facility ID harus lebih dari 0."
+                });
+            }
+
+            foreach (var facilityId in normalizedFacilityIds)
+            {
+                var facility =
+                    await _facilityRepository.GetFacilityByIdAsync(facilityId);
+
+                if (facility == null)
+                {
+                    return BadRequest(new
+                    {
+                        message = $"Facility dengan ID {facilityId} tidak ditemukan."
+                    });
+                }
+            }
+
             var rooms =
                 await _roomRepository.GetAvailableRoomsAsync(
                     date,
                     startTime,
                     endTime,
-                    capacity);
+                    capacity,
+                    normalizedFacilityIds);
 
             var response = rooms.Select(room =>
                 new RoomResponseDto
