@@ -11,6 +11,8 @@ namespace PeminjamanRuangAPI.Repositories
         Task<int> CreateUserAsync(User user);
         Task<bool> UpdateUserAsync(User user);
         Task<bool> DeleteUserAsync(int id);
+        Task<User?> GetDeletedUserByIdAsync(int id);
+        Task<bool> RestoreUserAsync(int id);
         Task<bool> UserExistsAsync(string email);
 
     }

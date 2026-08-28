@@ -309,5 +309,65 @@ namespace PeminjamanRuangAPI.Controllers
                 message = "User berhasil dihapus." 
             });
         }
+
+        [HttpPost("{id}/restore")]
+        public async Task<ActionResult> RestoreUser(int id)
+        {
+            var deletedUser =
+                await _userRepository.GetDeletedUserByIdAsync(id);
+        
+            if (deletedUser == null)
+            {
+                return NotFound(new
+                {
+                    message = "User yang sudah dihapus tidak ditemukan."
+                });
+            }
+        
+            var adminIdClaim =
+                User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        
+            if (!int.TryParse(adminIdClaim, out int adminId))
+            {
+                return Unauthorized(new
+                {
+                    message = "Token admin tidak valid."
+                });
+            }
+        
+            var emailAlreadyUsed =
+                await _userRepository.UserExistsAsync(deletedUser.Email);
+        
+            if (emailAlreadyUsed)
+            {
+                return Conflict(new
+                {
+                    message = "User tidak dapat dipulihkan karena email sudah digunakan oleh akun lain."
+                });
+            }
+        
+            var success =
+                await _userRepository.RestoreUserAsync(id);
+        
+            if (!success)
+            {
+                return BadRequest(new
+                {
+                    message = "User gagal dipulihkan."
+                });
+            }
+        
+            await _auditLogService.LogAsync(
+                adminId,
+                "RESTORE",
+                "USER",
+                deletedUser.Id,
+                $"User '{deletedUser.Email}' dengan nama '{deletedUser.FullName}' dipulihkan.");
+        
+            return Ok(new
+            {
+                message = "User berhasil dipulihkan."
+            });
+        }
     }
 }

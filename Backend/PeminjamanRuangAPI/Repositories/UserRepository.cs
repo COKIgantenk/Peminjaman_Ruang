@@ -152,10 +152,63 @@ namespace PeminjamanRuangAPI.Repositories
             using (var connection = _dbConnection.CreateConnection())
             {
                 // Soft delete
-                const string query = "UPDATE users SET deleted_at = NOW(), updated_at = NOW() WHERE id = @Id";
+                const string query = @"
+                    UPDATE users 
+                    SET 
+                        deleted_at = NOW(), 
+                        updated_at = NOW() 
+                    WHERE id = @Id
+                      AND deleted_at IS NULL";
+
                 var result = await connection.ExecuteAsync(query, new { Id = id });
                 return result > 0;
             }
+        }
+
+        public async Task<User?> GetDeletedUserByIdAsync(int id)
+        {
+            using var connection = _dbConnection.CreateConnection();
+
+            const string query =@"
+                SELECT
+                    id AS ""Id"",
+                    email AS ""Email"",
+                    password_hash AS ""PasswordHash"",
+                    full_name AS ""FullName"",
+                    phone_number AS ""PhoneNumber"",
+                    department_id AS ""DepartmentId"",
+                    role AS ""Role"",
+                    is_active AS ""IsActive"",
+                    last_login AS ""LastLogin"",
+                    created_at AS ""CreatedAt"",
+                    updated_at AS ""UpdatedAt"",
+                    deleted_at AS ""DeletedAt""
+                FROM users
+                WHERE id = @Id
+                  AND deleted_at IS NOT NULL";
+
+            return await connection.QueryFirstOrDefaultAsync<User>(
+                query,
+                new { Id = id });
+        }
+
+        public async Task<bool> RestoreUserAsync(int id)
+        {
+            using var connection = _dbConnection.CreateConnection();
+
+            const string query = @"
+                UPDATE users
+                SET
+                    deleted_at = NULL,
+                    updated_at = NOW()
+                WHERE id = @Id
+                  AND deleted_at IS NOT NULL";
+
+            var result = await  connection.ExecuteAsync(
+                query,
+                new { Id = id});
+
+            return result > 0;
         }
 
         public async Task<bool> UserExistsAsync(string email)
