@@ -221,6 +221,20 @@ namespace PeminjamanRuangAPI.Repositories
             }
         }
 
+        public async Task<int> CountActiveAdminAsync()
+        {
+            using var connection = _dbConnection.CreateConnection();
+            
+            const string query = @"
+                SELECT COUNT (*)
+                FROM users
+                WHERE role = 'ADMIN'
+                  AND is_active = true
+                  AND deleted_at IS NULL";
+
+            return await connection.ExecuteScalarAsync<int>(query);
+        }
+
         public async Task<IEnumerable<User>> GetUsersByRoleAsync(string role)
         {
             using (var connection = _dbConnection.CreateConnection())

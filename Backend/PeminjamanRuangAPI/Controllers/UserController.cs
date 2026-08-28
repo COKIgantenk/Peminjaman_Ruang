@@ -64,6 +64,11 @@ namespace PeminjamanRuangAPI.Controllers
         public async Task<ActionResult> CreateUser(
             [FromBody]CreateUserRequestDto request)
         {
+            request.Email = request.Email.Trim().ToLowerInvariant();
+            request.FullName = request.FullName.Trim();
+            request.PhoneNumber = request.PhoneNumber.Trim();
+            request.Role = request.Role.Trim().ToUpperInvariant();
+
             var exist = 
                 await _userRepository.UserExistsAsync(request.Email);
 
@@ -89,7 +94,7 @@ namespace PeminjamanRuangAPI.Controllers
 
             var allowedRoles = new[] { "USER", "ADMIN" };
 
-            var role = request.Role.ToUpperInvariant();
+            var role = request.Role;
 
             if (!allowedRoles.Contains(role))
             {
@@ -175,6 +180,10 @@ namespace PeminjamanRuangAPI.Controllers
             int id,
             [FromBody] UpdateUserRequestDto request)
         {
+            request.FullName = request.FullName.Trim();
+            request.PhoneNumber = request.PhoneNumber.Trim();
+            request.Role = request.Role.Trim().ToUpperInvariant();
+
             var user = 
                 await _userRepository.GetUserByIdAsync(id);
 
@@ -198,7 +207,7 @@ namespace PeminjamanRuangAPI.Controllers
             }
 
             var allowedRoles = new[] { "USER", "ADMIN" };
-            var role = request.Role.ToUpperInvariant();
+            var role = request.Role;
 
             if (!allowedRoles.Contains(role))
             {
@@ -219,6 +228,44 @@ namespace PeminjamanRuangAPI.Controllers
                 });
             }
 
+            if (adminId == id)
+            {
+                if (!request.IsActive)
+                {
+                    return BadRequest(new
+                    {
+                        message = "Admin tidak dapat menonaktifkan akun sendiri."
+                    });
+                }
+
+                if (role != "ADMIN")
+                {
+                    return BadRequest(new
+                    {
+                        message = "Admin tidak dapat mengubah role akun sendiri."
+                    });
+                }
+            }
+
+            var removingAdminAccess = 
+                user.Role == "ADMIN"
+                && user.IsActive
+                && (role != "ADMIN" || !request.IsActive);
+
+            if (removingAdminAccess)
+            {
+                var activeAdminCount =
+                    await _userRepository.CountActiveAdminAsync();
+
+                if (activeAdminCount <= 1)
+                {
+                    return BadRequest(new
+                    {
+                        message = "Admin aktif terakhir tidak dapat dinonaktifkan atau diubah menjadi USER."
+                    });
+                }
+            }
+
             var oldFullName = user.FullName;
             var oldPhoneNumber = user.PhoneNumber;
             var oldDepartmentId = user.DepartmentId;
@@ -230,6 +277,7 @@ namespace PeminjamanRuangAPI.Controllers
             user.DepartmentId = request.DepartmentId;
             user.Role = role;
             user.IsActive = request.IsActive;
+            
 
             var success = 
                 await _userRepository.UpdateUserAsync(user);
@@ -284,6 +332,28 @@ namespace PeminjamanRuangAPI.Controllers
                 {
                     message = "Token admin tidak valid."
                 });
+            }
+
+            if (adminId == id)
+            {
+                return BadRequest(new
+                {
+                    message = "Admin tidak dapat menghapus akun sendiri."
+                });
+            }
+
+            if (user.Role == "ADMIN" && user.IsActive)
+            {
+                var activeAdminCount =
+                    await _userRepository.CountActiveAdminAsync();
+
+                if (activeAdminCount <= 1)
+                {
+                    return BadRequest(new
+                    {
+                        message = "Admin aktif terakhir tidak dapat dihapus."
+                    });
+                }
             }
 
             var success = 

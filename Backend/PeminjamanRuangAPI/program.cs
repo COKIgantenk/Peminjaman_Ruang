@@ -1,12 +1,13 @@
 using Dapper;
-using PeminjamanRuangAPI.Data;
-using PeminjamanRuangAPI.Repositories;
-using PeminjamanRuangAPI.Services;
-using PeminjamanRuangAPI.Configuration;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using PeminjamanRuangAPI.Data;
+using PeminjamanRuangAPI.Services;
+using PeminjamanRuangAPI.Exceptions;
+using PeminjamanRuangAPI.Repositories;
+using PeminjamanRuangAPI.Configuration;
 using PeminjamanRuangAPI.Data.TypeHandlers;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,9 @@ SqlMapper.AddTypeHandler(new TimeOnlyTypeHandler());
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddControllers();
+
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 // Register DatabaseConnection
 builder.Services.AddScoped<DatabaseConnection>();
@@ -94,10 +98,12 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+//Global exception handler
+app.UseExceptionHandler();
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Error");
     app.UseHsts();
 }
 

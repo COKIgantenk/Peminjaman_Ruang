@@ -14,6 +14,7 @@ namespace PeminjamanRuangAPI.Repositories
         Task<User?> GetDeletedUserByIdAsync(int id);
         Task<bool> RestoreUserAsync(int id);
         Task<bool> UserExistsAsync(string email);
+        Task<int> CountActiveAdminAsync();
 
     }
 }
