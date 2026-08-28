@@ -1,5 +1,6 @@
 using Dapper;
 using System.Text;
+using System.Security.Claims;
 using PeminjamanRuangAPI.Data;
 using PeminjamanRuangAPI.Services;
 using PeminjamanRuangAPI.Exceptions;
@@ -44,9 +45,11 @@ builder.Services.AddHostedService<BookingCleaningBackgroundService>();
 builder.Services.AddHostedService<MaintenanceActivationBackgroundService>();
 builder.Services.AddScoped<AuditLogService>();
 
-builder.Services.Configure<JwtSettings>(
-    builder.Configuration.GetSection("JwtSettings")
-);
+builder.Services
+    .AddOptions<JwtSettings>()
+    .Bind(builder.Configuration.GetSection("JwtSettings"))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 
 builder.Services.AddSingleton(sp =>
     sp.GetRequiredService<
@@ -80,6 +83,57 @@ builder.Services
             ),
 
             ClockSkew = TimeSpan.Zero
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var userIdClaim =
+                    context.Principal?
+                        .FindFirst(ClaimTypes.NameIdentifier)?
+                        .Value;
+
+                if (!int.TryParse(userIdClaim, out int userId))
+                {
+                    context.Fail("User ID pada token tidak valid.");
+                    return;
+                }
+
+                var userRepository =
+                    context.HttpContext.RequestServices
+                        .GetRequiredService<IUserRepository>();
+
+                var user =
+                    await userRepository.GetUserByIdAsync(userId);
+
+                if (user == null)
+                {
+                    context.Fail("User tidak ditemukan.");
+                    return;
+                }
+
+                if (!user.IsActive)
+                {
+                    context.Fail("Akun user sudah tidak aktif.");
+                    return;
+                }
+
+                var tokenRole =
+                    context.Principal?
+                        .FindFirst(ClaimTypes.Role)?
+                        .Value;
+
+                if (string.IsNullOrWhiteSpace(tokenRole) ||
+                    !string.Equals(
+                        tokenRole,
+                        user.Role,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    context.Fail("Role user sudah berubah.");
+                    return;
+                }
+            }
         };
     });
 
