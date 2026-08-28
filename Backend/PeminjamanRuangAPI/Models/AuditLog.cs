@@ -4,10 +4,10 @@ namespace PeminjamanRuangAPI.Models
     {
         public int Id { get; set; }
         public int AdminId { get; set; }
-        public string Action { get; set; } // CREATE, UPDATE, DELETE, APPROVE, REJECT
-        public string EntityType { get; set; } // BOOKING, ROOM, USER, MAINTENANCE
+        public required string Action { get; set; } // CREATE, UPDATE, DELETE, APPROVE, REJECT
+        public required string EntityType { get; set; } // BOOKING, ROOM, USER, MAINTENANCE
         public int EntityId { get; set; }
-        public string Changes { get; set; }
+        public string? Changes { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 }

@@ -50,19 +50,30 @@ namespace PeminjamanRuangAPI.Repositories
             );
         }
 
-        public async Task<bool> CreateFacilityAsync(Facility facility)
+        public async Task<int> CreateFacilityAsync(Facility facility)
         {
             using var connection = _dbConnection.CreateConnection();
 
             const string query = @"
                 INSERT INTO facilities
-                    (name, description, created_at, updated_at)
-                VALUES
-                    (@Name, @Description, NOW(), NOW())";
+                    (
+                        name, 
+                        description, 
+                        created_at, 
+                        updated_at
+                    )
+                    VALUES
+                    (
+                        @Name, 
+                        @Description, 
+                        NOW(), 
+                        NOW()
+                    )
+                    RETURNING id";
 
-            var result = await connection.ExecuteAsync(query, facility);
-
-            return result > 0;
+            return await connection.ExecuteScalarAsync<int>(
+                query,
+                facility);
         }
 
         public async Task<bool> UpdateFacilityAsync(Facility facility)

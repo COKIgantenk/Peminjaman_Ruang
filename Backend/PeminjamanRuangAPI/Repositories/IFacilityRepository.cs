@@ -8,7 +8,7 @@ namespace PeminjamanRuangAPI.Repositories
 
         Task<Facility?> GetFacilityByIdAsync(int id);
 
-        Task<bool> CreateFacilityAsync(Facility facility);
+        Task<int> CreateFacilityAsync(Facility facility);
 
         Task<bool> UpdateFacilityAsync(Facility facility);
 

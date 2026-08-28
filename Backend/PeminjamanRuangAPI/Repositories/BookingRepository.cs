@@ -418,12 +418,17 @@ namespace PeminjamanRuangAPI.Repositories
                 FROM bookings b
                 WHERE b.status = 'APPROVED'
                   AND (
-                        b.booking_date < CURRENT_DATE
+                        b.booking_date < 
+                            timezone('Asia/Jakarta', CURRENT_TIMESTAMP):: date  
+
                         OR (
-                            b.booking_date = CURRENT_DATE
-                            AND b.end_time <= CURRENT_TIME
+                            b.booking_date = 
+                                timezone('Asia/Jakarta', CURRENT_TIMESTAMP):: date
+                            
+                            AND b.end_time <= 
+                                timezone('Asia/Jakarta', CURRENT_TIMESTAMP):: time
+                           )
                         )
-                      )
                   AND NOT EXISTS (
                         SELECT 1
                         FROM room_cleaning_session rcs

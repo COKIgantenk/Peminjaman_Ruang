@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PeminjamanRuangAPI.Services;
 using PeminjamanRuangAPI.DTOs;
 using PeminjamanRuangAPI.Models;
 using PeminjamanRuangAPI.Repositories;
@@ -15,15 +16,18 @@ namespace PeminjamanRuangAPI.Controllers
         private readonly IMaintenanceRepository _maintenanceRepository;
         private readonly IRoomRepository _roomRepository;
         private readonly IBookingRepository _bookingRepository;
+        private readonly AuditLogService _auditLogService;
 
         public MaintenanceController(
             IMaintenanceRepository maintenanceRepository,
             IRoomRepository roomRepository,
-            IBookingRepository bookingRepository)
+            IBookingRepository bookingRepository,
+            AuditLogService auditLogService)
         {
             _maintenanceRepository = maintenanceRepository;
             _roomRepository = roomRepository;
             _bookingRepository = bookingRepository;
+            _auditLogService = auditLogService;
         }
 
         [HttpPost]
@@ -155,6 +159,16 @@ namespace PeminjamanRuangAPI.Controllers
                 });
             }
 
+            await _auditLogService.LogAsync(
+                adminId,
+                "CREATE",
+                "MAINTENANCE",
+                maintenanceId,
+                $"Maintenance dibuat untuk Room {request.RoomId}, " +
+                $"tanggal {request.StartDate}" +
+                $"{(request.EndDate.HasValue ? $" sampai {request.EndDate.Value}" : "")}. " +
+                $"Priority: {priority}.");
+
             return Ok(new
             {
                 message = "Maintenance berhasil dibuat.",
@@ -278,6 +292,13 @@ namespace PeminjamanRuangAPI.Controllers
                     message = "Gagal menyelesaikan maintenance."
                 });
             }
+
+            await _auditLogService.LogAsync(
+                adminId,
+                "COMPLETE",
+                "MAINTENANCE",
+                maintenance.Id,
+                $"Maintenance Room {maintenance.RoomId} diselesaikan dan room kembali ACTIVE.");
         
             return Ok(new
             {

@@ -106,9 +106,9 @@ namespace PeminjamanRuangAPI.Controllers
                 IsActive = true, // Set default status to active
             };
 
-            var succes = await _userRepository.CreateUserAsync(user);
+            var userId = await _userRepository.CreateUserAsync(user);
 
-            if (!succes)
+            if (userId <= 0)
             {
                 return BadRequest(new
                 {

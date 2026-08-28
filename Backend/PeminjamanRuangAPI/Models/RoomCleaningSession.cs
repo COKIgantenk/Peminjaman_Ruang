@@ -8,6 +8,7 @@ namespace PeminjamanRuangAPI.Models
         public required string CleaningDuration { get; set; } // 10_MINUTES, 20_MINUTES, 30_MINUTES, CUSTOM
         public int? CustomDurationMinutes { get; set;}
         public DateTime StartTime { get; set; }
+        public DateTime? ScheduledEndTime { get; set; }
         public DateTime? EndTime { get; set; }
         public bool IsCompleted { get; set; }
         public DateTime CreatedAt { get; set; }

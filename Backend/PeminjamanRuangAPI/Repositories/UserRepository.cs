@@ -95,16 +95,40 @@ namespace PeminjamanRuangAPI.Repositories
             }
         }
 
-        public async Task<bool> CreateUserAsync(User user)
+        public async Task<int> CreateUserAsync(User user)
         {
             using (var connection = _dbConnection.CreateConnection())
             {
                 const string query = @"
-                    INSERT INTO users (email, password_hash, full_name, phone_number, department_id, role, is_active, created_at, updated_at)
-                    VALUES (@Email, @PasswordHash, @FullName, @PhoneNumber, @DepartmentId, @Role, @IsActive, NOW(), NOW())";
+                    INSERT INTO users 
+                    (
+                        email, 
+                        password_hash, 
+                        full_name, 
+                        phone_number, 
+                        department_id, 
+                        role, 
+                        is_active, 
+                        created_at, 
+                        updated_at
+                    )
+                    VALUES 
+                    (
+                        @Email, 
+                        @PasswordHash, 
+                        @FullName, 
+                        @PhoneNumber, 
+                        @DepartmentId, 
+                        @Role, 
+                        @IsActive, 
+                        NOW(), 
+                        NOW()
+                    )
+                    RETURNING id";
                 
-                var result = await connection.ExecuteAsync(query, user);
-                return result > 0;
+                return await connection.ExecuteScalarAsync<int>(
+                    query,
+                    user);
             }
         }
 

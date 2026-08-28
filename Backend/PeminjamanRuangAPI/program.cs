@@ -31,12 +31,14 @@ builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<IRoomStatusHistoryRepository, RoomStatusHistoryRepository>();
 builder.Services.AddScoped<IMaintenanceRepository, MaintenanceRepository>();
 builder.Services.AddScoped<IRoomCleaningSessionRepository, RoomCleaningSessionRepository>();
+builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 
 
 // Register Services
 builder.Services.AddScoped<PasswordService>();
 builder.Services.AddHostedService<BookingCleaningBackgroundService>();
 builder.Services.AddHostedService<MaintenanceActivationBackgroundService>();
+builder.Services.AddScoped<AuditLogService>();
 
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection("JwtSettings")

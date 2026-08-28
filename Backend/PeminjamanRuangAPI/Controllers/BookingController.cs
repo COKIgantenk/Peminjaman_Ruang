@@ -2,6 +2,7 @@ using System.Linq;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PeminjamanRuangAPI.Services;
 using PeminjamanRuangAPI.DTOs;
 using PeminjamanRuangAPI.Models;
 using PeminjamanRuangAPI.Repositories;
@@ -19,6 +20,7 @@ namespace PeminjamanRuangAPI.Controllers
         private readonly IBookingCancellationRepository _bookingCancellationRepository;
         private readonly INotificationRepository _notificationRepository;
         private readonly IMaintenanceRepository _maintenanceRepository;
+        private readonly AuditLogService _auditLogService;
 
         public BookingController(
             IBookingRepository bookingRepository,
@@ -26,7 +28,8 @@ namespace PeminjamanRuangAPI.Controllers
             IUserRepository userRepository,
             IBookingCancellationRepository bookingCancellationRepository,
             INotificationRepository notificationRepository,
-            IMaintenanceRepository maintenanceRepository)
+            IMaintenanceRepository maintenanceRepository,
+            AuditLogService auditLogService)
         {
             _bookingRepository = bookingRepository;
             _roomRepository = roomRepository;
@@ -34,6 +37,7 @@ namespace PeminjamanRuangAPI.Controllers
             _bookingCancellationRepository = bookingCancellationRepository;
             _notificationRepository = notificationRepository;
             _maintenanceRepository = maintenanceRepository;
+            _auditLogService = auditLogService;
         }
 
         [HttpPost]
@@ -548,6 +552,13 @@ namespace PeminjamanRuangAPI.Controllers
                 });
             }
 
+            await _auditLogService.LogAsync(
+                adminId,
+                "APPROVE",
+                "BOOKING",
+                booking.Id,
+                "Status berubah dari PENDING menjadi APPROVED");
+
             var notification = new Notification
             {
                 UserId = booking.UserId,
@@ -628,6 +639,13 @@ namespace PeminjamanRuangAPI.Controllers
                     message = "Booking gagal ditolak."
                 });
             }
+
+            await _auditLogService.LogAsync(
+                adminId,
+                "REJECT",
+                "BOOKING",
+                booking.Id,
+                $"Status berubah dari PENDING menjadi REJECTED. Alasan : {request.Reason.Trim()}");
 
             var notification = new Notification
             {

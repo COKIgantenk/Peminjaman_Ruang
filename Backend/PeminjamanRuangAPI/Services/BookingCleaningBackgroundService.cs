@@ -55,6 +55,36 @@ namespace PeminjamanRuangAPI.Services
                                 booking.Id);
                         }
                     }
+
+                    var cleaningSessionsToComplete = 
+                        await cleaningRepository
+                            .GetCleaningSessionsReadyToCompleteAsync();
+
+                    foreach (var session in cleaningSessionsToComplete)
+                    {
+                        try
+                        {
+                            var completed =
+                            await cleaningRepository
+                                .CompleteAutomaticCleaningWithStatusAsync(
+                                    session.Id,
+                                    session.RoomId);
+
+                            if (completed)
+                            {
+                                _logger.LogInformation(
+                                    "Cleaning session {CleaningSessionId} selesai otomatis.",
+                                    session.Id);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(
+                                ex,
+                                "Gagal menyelesaikan cleaning otomatis {CleaningSessionId}.",
+                                session.Id);
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {

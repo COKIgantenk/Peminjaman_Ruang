@@ -42,17 +42,29 @@ namespace PeminjamanRuangAPI.Repositories
             }
         }
 
-        public async Task<bool> CreateDepartmentAsync(Department department)
+        public async Task<int> CreateDepartmentAsync(Department department)
         {
             using (var connection = _dbConnection.CreateConnection())
             {
                 const string query = @"
-                    INSERT INTO departments (name, created_at, updated_at)
-                    VALUES (@Name, NOW(), NOW())";
+                    INSERT INTO departments 
+                    (
+                        name, 
+                        created_at, 
+                        updated_at
+                    )
+                    VALUES 
+                    (
+                        @Name, 
+                        NOW(), 
+                        NOW()
+                    )
+                    RETURNING id";
 
-                var result = await connection.ExecuteAsync(query, department);
+                return await connection.ExecuteScalarAsync<int>(
+                    query,
+                    department);
 
-                return result > 0;
             }
         }
     }

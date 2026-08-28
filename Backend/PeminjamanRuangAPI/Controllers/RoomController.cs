@@ -1,5 +1,7 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PeminjamanRuangAPI.Services;
 using PeminjamanRuangAPI.DTOs;
 using PeminjamanRuangAPI.Models;
 using PeminjamanRuangAPI.Repositories;
@@ -13,13 +15,16 @@ namespace PeminjamanRuangAPI.Controllers
     {
         private readonly IRoomRepository _roomRepository;
         private readonly IFacilityRepository _facilityRepository;
+        private readonly AuditLogService _auditLogService;
 
         public RoomController(
             IRoomRepository roomRepository,
-            IFacilityRepository facilityRepository)
+            IFacilityRepository facilityRepository,
+            AuditLogService auditLogService)
         {
             _roomRepository = roomRepository;
             _facilityRepository = facilityRepository;
+            _auditLogService = auditLogService;
         }
 
         [HttpGet]
@@ -172,6 +177,17 @@ namespace PeminjamanRuangAPI.Controllers
                 });
             }
 
+            var adminIdClaim =
+                User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (!int.TryParse(adminIdClaim, out int adminId))
+            {
+                return Unauthorized(new
+                {
+                    message = "Token Admin tidak valid."
+                });
+            }
+
             var room = new Room
             {
                 Name = request.Name,
@@ -182,15 +198,25 @@ namespace PeminjamanRuangAPI.Controllers
                 IsActive = true
             };
 
-            var success = await _roomRepository.CreateRoomAsync(room);
+            var roomId =
+                await _roomRepository.CreateRoomAsync(room);
 
-            if (!success)
+            if (roomId <= 0)
             {
                 return BadRequest(new
                 {
-                    message = "Room gagal dibuat."
+                    message = "Room gagal dibuat"
                 });
             }
+
+            room.Id = roomId;
+
+            await _auditLogService.LogAsync(
+                adminId,
+                "CREATE",
+                "ROOM",
+                room.Id,
+                $"Room '{room.Name}' dibuat. Location: {room.Location}, Capacity : {room.Capacity}.");
 
             return Ok(new
             {
@@ -205,6 +231,17 @@ namespace PeminjamanRuangAPI.Controllers
             [FromBody] UpdateRoomRequestDto request)
         {
             var room = await _roomRepository.GetRoomByIdAsync(id);
+
+            var adminIdClaim =
+                User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (!int.TryParse(adminIdClaim, out int adminId))
+            {
+                return Unauthorized(new
+                {
+                    message = "Token Admin tidak valid."
+                });
+            }
 
             if (room == null)
             {
@@ -222,6 +259,10 @@ namespace PeminjamanRuangAPI.Controllers
                 });
             }
 
+            var oldName = room.Name;
+            var oldLocation = room.Location;
+            var oldCapacity = room.Capacity;
+
             room.Name = request.Name;
             room.Location = request.Location;
             room.Capacity = request.Capacity;
@@ -238,6 +279,16 @@ namespace PeminjamanRuangAPI.Controllers
                     message = "Room gagal diperbarui."
                 });
             }
+
+            await _auditLogService.LogAsync(
+                adminId,
+                "UPDATE",
+                "ROOM",
+                room.Id,
+                $"Room diperbarui. " +
+                $"Name: '{oldName}' -> '{room.Name}', " +
+                $"Location: '{oldLocation}' -> '{room.Location}', " +
+                $"Capacity: {oldCapacity} -> {room.Capacity}.");
 
             return Ok(new
             {

@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PeminjamanRuangAPI.Services;
 using PeminjamanRuangAPI.DTOs;
 using PeminjamanRuangAPI.Repositories;
 
@@ -14,15 +15,18 @@ namespace PeminjamanRuangAPI.Controllers
         private readonly IRoomStatusHistoryRepository _roomStatusRepository;
         private readonly IRoomRepository _roomRepository;
         private readonly IBookingRepository _bookingRepository;
+        private readonly AuditLogService _auditLogService;
 
         public RoomStatusController(
             IRoomStatusHistoryRepository roomStatusRepository,
             IRoomRepository roomRepository,
-            IBookingRepository bookingRepository)
+            IBookingRepository bookingRepository,
+            AuditLogService auditLogService)
         {
             _roomStatusRepository = roomStatusRepository;
             _roomRepository = roomRepository;
             _bookingRepository = bookingRepository;
+            _auditLogService = auditLogService;
         }
 
         // ADMIN: mengubah status room
@@ -45,9 +49,7 @@ namespace PeminjamanRuangAPI.Controllers
             var allowedStatuses = new[]
             {
                 "ACTIVE",
-                "OUT_OF_SERVICE",
-                "MAINTENANCE",
-                "CLEANING"
+                "OUT_OF_SERVICE"      
             };
 
             var status = request.Status.Trim().ToUpperInvariant();
@@ -57,16 +59,6 @@ namespace PeminjamanRuangAPI.Controllers
                 return BadRequest(new
                 {
                     message = "Status room tidak valid."
-                });
-            }
-
-            // Hanya status MAINTENANCE yang wajib mengisi Reason
-            if (status != "MAINTENANCE" &&
-                string.IsNullOrWhiteSpace(request.Reason))
-            {
-                return BadRequest(new
-                {
-                    message = "Alasan Maintenance wajib diisi."
                 });
             }
 
@@ -98,6 +90,21 @@ namespace PeminjamanRuangAPI.Controllers
                 });
             }
 
+            var previousStatus =
+                await _roomStatusRepository
+                    .GetLatestRoomStatusAsync(roomId);
+
+            var previousStatusName =
+                previousStatus?.Status ?? "UNKNOWN";
+
+            if (previousStatusName == status)
+            {
+                return BadRequest(new
+                {
+                    message = $"Room sudah berstatus {status}."
+                });
+            }
+
             var success =
                 await _roomStatusRepository.ChangeRoomStatusAsync(
                     roomId,
@@ -112,6 +119,18 @@ namespace PeminjamanRuangAPI.Controllers
                     message = "Gagal mengubah status room."
                 });
             }
+
+            var auditAction =
+                status == "ACTIVE"
+                    ? "ACTIVATE"
+                    : "DEACTIVATE";
+
+            await _auditLogService.LogAsync(
+                adminId,
+                auditAction,
+                "ROOM",
+                roomId,
+                $"Status room berubah dari {previousStatusName} menjadi {status}");
 
             return Ok(new
             {

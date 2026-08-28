@@ -8,7 +8,7 @@ namespace PeminjamanRuangAPI.Repositories
         Task<IEnumerable<User>> GetUsersByRoleAsync(string role);
         Task<User?> GetUserByIdAsync(int id);
         Task<User?> GetUserByEmailAsync(string email);
-        Task<bool> CreateUserAsync(User user);
+        Task<int> CreateUserAsync(User user);
         Task<bool> UpdateUserAsync(User user);
         Task<bool> DeleteUserAsync(int id);
         Task<bool> UserExistsAsync(string email);

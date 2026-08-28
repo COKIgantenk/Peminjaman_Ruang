@@ -12,7 +12,7 @@ namespace PeminjamanRuangAPI.Repositories
             TimeSpan endTime, 
             int capacity,
             int[]? facilityIds);
-        Task<bool> CreateRoomAsync(Room room);
+        Task<int> CreateRoomAsync(Room room);
         Task<bool> UpdateRoomAsync(Room room);
         Task<bool> DeactivateRoomAsync(int id);
         Task<IEnumerable<Facility>> GetRoomFacilitiesAsync(int roomId);

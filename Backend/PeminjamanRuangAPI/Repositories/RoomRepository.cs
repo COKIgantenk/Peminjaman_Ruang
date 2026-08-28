@@ -137,16 +137,38 @@ namespace PeminjamanRuangAPI.Repositories
                 });
             }
 
-        public async Task<bool> CreateRoomAsync(Room room)
+        public async Task<int> CreateRoomAsync(Room room)
         {
             using (var connection = _dbConnection.CreateConnection())
             {
                 const string query = @"
-                    INSERT INTO rooms (name, location, capacity, description, image_url, is_active, created_at, updated_at)
-                    VALUES (@Name, @Location, @Capacity, @Description, @ImageUrl, @IsActive, NOW(), NOW())";
+                    INSERT INTO rooms 
+                    (
+                        name, 
+                        location, 
+                        capacity, 
+                        description, 
+                        image_url, 
+                        is_active, 
+                        created_at, 
+                        updated_at
+                    )
+                    VALUES 
+                    (
+                        @Name, 
+                        @Location, 
+                        @Capacity, 
+                        @Description, 
+                        @ImageUrl, 
+                        @IsActive, 
+                        NOW(), 
+                        NOW()
+                    )
+                    RETURNING id";
                 
-                var result = await connection.ExecuteAsync(query, room);
-                return result > 0;
+                return await connection.ExecuteScalarAsync<int>(
+                    query,
+                    room);
             }
         }
 

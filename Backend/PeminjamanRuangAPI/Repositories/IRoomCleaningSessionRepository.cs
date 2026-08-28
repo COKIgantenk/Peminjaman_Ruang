@@ -20,6 +20,13 @@ namespace PeminjamanRuangAPI.Repositories
             string cleaningDuration,
             int? customDurationMinutes);
 
+        Task<IEnumerable<RoomCleaningSession>>
+            GetCleaningSessionsReadyToCompleteAsync();
+
+        Task<bool> CompleteAutomaticCleaningWithStatusAsync(
+            int cleaningSessionId,
+            int roomId);
+
         Task<bool> CompleteCleaningWithStatusAsync(
             int cleaningSessionId,
             int roomId,

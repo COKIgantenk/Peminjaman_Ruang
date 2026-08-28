@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PeminjamanRuangAPI.Services;
 using PeminjamanRuangAPI.DTOs;
 using PeminjamanRuangAPI.Models;
 using PeminjamanRuangAPI.Repositories;
@@ -13,11 +14,15 @@ namespace PeminjamanRuangAPI.Controllers
     public class RoomCleaningController : ControllerBase
     {
         private readonly IRoomCleaningSessionRepository _cleaningRepository;
+        private readonly AuditLogService _auditLogService;
         
         public RoomCleaningController(
-            IRoomCleaningSessionRepository cleaningRepository)
+            IRoomCleaningSessionRepository cleaningRepository,
+            AuditLogService auditLogService)
         {
             _cleaningRepository = cleaningRepository;
+            _auditLogService = auditLogService;
+
         }
 
         
@@ -68,6 +73,13 @@ namespace PeminjamanRuangAPI.Controllers
                 });
             }
 
+            await _auditLogService.LogAsync(
+                adminId,
+                "COMPLETE",
+                "CLEANING",
+                session.Id,
+                $"Cleaning Room {session.RoomId} diselesaikan dan Room kembali ACTIVE.");
+
             return Ok(new
             {
                 message = "Cleaning session selesai dan room kembali aktif."
@@ -90,6 +102,7 @@ namespace PeminjamanRuangAPI.Controllers
                     CleaningDuration = session.CleaningDuration,
                     CustomDurationMinutes = session.CustomDurationMinutes,
                     StartTime = session.StartTime,
+                    ScheduledEndTime = session.ScheduledEndTime,
                     EndTime = session.EndTime,
                     IsCompleted = session.IsCompleted,
                     CreatedAt = session.CreatedAt
@@ -121,6 +134,7 @@ namespace PeminjamanRuangAPI.Controllers
                 CleaningDuration = session.CleaningDuration,
                 CustomDurationMinutes = session.CustomDurationMinutes,
                 StartTime = session.StartTime,
+                ScheduledEndTime = session.ScheduledEndTime,
                 EndTime = session.EndTime,
                 IsCompleted = session.IsCompleted,
                 CreatedAt = session.CreatedAt
@@ -150,6 +164,17 @@ namespace PeminjamanRuangAPI.Controllers
                 return BadRequest(new
                 {
                     message = "Cleaning session sudah selesai."
+                });
+            }
+
+            var adminIdClaim =
+                User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (!int.TryParse(adminIdClaim, out int adminId))
+            {
+                return Unauthorized(new
+                {
+                    message = "Token Admin tidak valid"
                 });
             }
 
@@ -191,6 +216,15 @@ namespace PeminjamanRuangAPI.Controllers
                 });
             }
 
+            if (session.CleaningDuration == duration &&
+                session.CustomDurationMinutes == request.CustomDurationMinutes)
+            {
+                return BadRequest(new
+                {
+                    message = "Durasi cleaning sudah menggunakan nilai tersebut"
+                });
+            }
+
             var success =
                 await _cleaningRepository.SetCleaningDurationAsync(
                     id,
@@ -204,6 +238,18 @@ namespace PeminjamanRuangAPI.Controllers
                     message = "Gagal menentukan durasi cleaning"
                 });
             }
+
+            var durationDetail = 
+                duration == "CUSTOM"
+                    ? $"CUSTOM {request.CustomDurationMinutes} menit"
+                    : duration;
+
+            await _auditLogService.LogAsync(
+                adminId,
+                "UPDATE",
+                "CLEANING",
+                session.Id,
+                $"Durasi cleaning Room {session.RoomId} diubah menjadi {durationDetail}.");
 
             return Ok(new
             {
