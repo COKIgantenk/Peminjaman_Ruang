@@ -3,6 +3,7 @@ using PeminjamanRuangAPI.DTOs;
 using PeminjamanRuangAPI.Repositories;
 using PeminjamanRuangAPI.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using PeminjamanRuangAPI.Models;
 
 namespace PeminjamanRuangAPI.Controllers
@@ -27,6 +28,7 @@ namespace PeminjamanRuangAPI.Controllers
 
         [AllowAnonymous]
         [HttpPost("login")]
+        [EnableRateLimiting("AuthPolicy")]
         public async Task<ActionResult<LoginResponseDto>> Login(
             [FromBody] LoginRequestDto request)
         {
@@ -78,6 +80,7 @@ namespace PeminjamanRuangAPI.Controllers
 
         [AllowAnonymous]
         [HttpPost("register")]
+        [EnableRateLimiting("AuthPolicy")]
         public async Task<ActionResult> Register([FromBody] RegisterRequestDto request)
         {
             var exist = await _userRepository.UserExistsAsync(request.Email);
