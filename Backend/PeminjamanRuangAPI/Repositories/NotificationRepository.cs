@@ -1,3 +1,4 @@
+using Npgsql;
 using Dapper;
 using PeminjamanRuangAPI.Data;
 using PeminjamanRuangAPI.Models;
@@ -88,6 +89,39 @@ namespace PeminjamanRuangAPI.Repositories
                 query,
                 notification);
 
+            return result > 0;
+        }
+
+        public async Task<bool> CreateNotificationAsync(
+            Notification notification,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction)
+        {
+            const string query = @"
+                INSERT INTO notifications
+                (
+                    user_id,
+                    booking_id,
+                    notification_type,
+                    email_sent,
+                    sent_at,
+                    created_at
+                )
+                VALUES
+                (
+                    @UserId,
+                    @BookingId,
+                    @NotificationType,
+                    @EmailSent,
+                    @SentAt,
+                    NOW()
+                )";
+        
+            var result = await connection.ExecuteAsync(
+                query,
+                notification,
+                transaction);
+        
             return result > 0;
         }
 

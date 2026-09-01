@@ -1,4 +1,5 @@
 using Dapper;
+using Npgsql;
 using PeminjamanRuangAPI.Data;
 using PeminjamanRuangAPI.Models;
 
@@ -172,6 +173,42 @@ namespace PeminjamanRuangAPI.Repositories
             }
         }
 
+        public async Task<int> CreateRoomAsync(
+            Room room,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction)
+        {
+            const string query = @"
+                INSERT INTO rooms
+                (
+                    name,
+                    location,
+                    capacity,
+                    description,
+                    image_url,
+                    is_active,
+                    created_at,
+                    updated_at
+                )
+                VALUES
+                (
+                    @Name,
+                    @Location,
+                    @Capacity,
+                    @Description,
+                    @ImageUrl,
+                    @IsActive,
+                    NOW(),
+                    NOW()
+                )
+                RETURNING id";
+        
+            return await connection.ExecuteScalarAsync<int>(
+                query,
+                room,
+                transaction);
+        }
+
         public async Task<bool> UpdateRoomAsync(Room room)
         {
             using (var connection = _dbConnection.CreateConnection())
@@ -186,6 +223,30 @@ namespace PeminjamanRuangAPI.Repositories
                 var result = await connection.ExecuteAsync(query, room);
                 return result > 0;
             }
+        }
+
+        public async Task<bool> UpdateRoomAsync(
+            Room room,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction)
+        {
+            const string query = @"
+                UPDATE rooms
+                SET name = @Name,
+                    location = @Location,
+                    capacity = @Capacity,
+                    description = @Description,
+                    image_url = @ImageUrl,
+                    is_active = @IsActive,
+                    updated_at = NOW()
+                WHERE id = @Id";
+        
+            var result = await connection.ExecuteAsync(
+                query,
+                room,
+                transaction);
+        
+            return result > 0;
         }
 
         public async Task<bool> DeactivateRoomAsync(int id)

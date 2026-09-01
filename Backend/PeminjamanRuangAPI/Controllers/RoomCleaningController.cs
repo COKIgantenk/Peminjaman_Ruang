@@ -14,76 +14,14 @@ namespace PeminjamanRuangAPI.Controllers
     public class RoomCleaningController : ControllerBase
     {
         private readonly IRoomCleaningSessionRepository _cleaningRepository;
-        private readonly AuditLogService _auditLogService;
+        private readonly CleaningTransactionService _cleaningTransactionService;
         
         public RoomCleaningController(
             IRoomCleaningSessionRepository cleaningRepository,
-            AuditLogService auditLogService)
+            CleaningTransactionService cleaningTransactionService)
         {
             _cleaningRepository = cleaningRepository;
-            _auditLogService = auditLogService;
-
-        }
-
-        
-        [HttpPut("{id}/complete")]
-        public async Task<ActionResult> CompleteCleaning(int id)
-        {
-            var session =
-                await _cleaningRepository.GetCleaningSessionByIdAsync(id);
-
-            if (session == null)
-            {
-                return NotFound(new
-                {
-                    message = "Cleaning session tidak ditemukan."
-                });
-            }
-
-            if (session.IsCompleted)
-            {
-                return BadRequest(new
-                {
-                    message = "Cleaning session sudah selesai sebelumnya."
-                });
-            }
-
-            var adminIdClaim =
-                User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (!int.TryParse(adminIdClaim, out int adminId))
-            {
-                return Unauthorized(new
-                {
-                    message = "Token admin tidak valid."
-                });
-            }
-
-            var completed =
-                await _cleaningRepository.CompleteCleaningWithStatusAsync(
-                    id,
-                    session.RoomId,
-                    adminId);
-
-            if (!completed)
-            {
-                return BadRequest(new
-                {
-                    message = "Cleaning session gagal diselesaikan."
-                });
-            }
-
-            await _auditLogService.LogAsync(
-                adminId,
-                "COMPLETE",
-                "CLEANING",
-                session.Id,
-                $"Cleaning Room {session.RoomId} diselesaikan dan Room kembali ACTIVE.");
-
-            return Ok(new
-            {
-                message = "Cleaning session selesai dan room kembali aktif."
-            });
+            _cleaningTransactionService = cleaningTransactionService;
         }
 
         [HttpGet]
@@ -226,8 +164,10 @@ namespace PeminjamanRuangAPI.Controllers
             }
 
             var success =
-                await _cleaningRepository.SetCleaningDurationAsync(
+                await _cleaningTransactionService.SetCleaningDurationAsync(
                     id,
+                    session.RoomId,
+                    adminId,
                     duration,
                     request.CustomDurationMinutes);
 
@@ -238,18 +178,6 @@ namespace PeminjamanRuangAPI.Controllers
                     message = "Gagal menentukan durasi cleaning"
                 });
             }
-
-            var durationDetail = 
-                duration == "CUSTOM"
-                    ? $"CUSTOM {request.CustomDurationMinutes} menit"
-                    : duration;
-
-            await _auditLogService.LogAsync(
-                adminId,
-                "UPDATE",
-                "CLEANING",
-                session.Id,
-                $"Durasi cleaning Room {session.RoomId} diubah menjadi {durationDetail}.");
 
             return Ok(new
             {

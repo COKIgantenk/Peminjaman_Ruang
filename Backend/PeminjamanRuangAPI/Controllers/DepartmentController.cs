@@ -12,14 +12,14 @@ namespace PeminjamanRuangAPI.Controllers
     public class DepartmentController : ControllerBase
     {
         private readonly IDepartmentRepository _departmentRepository;
-        private readonly AuditLogService _auditLogService;
+        private readonly DepartmentTransactionService _departmentTransactionService;
 
         public DepartmentController(
             IDepartmentRepository departmentRepository,
-            AuditLogService auditLogService)
+            DepartmentTransactionService departmentTransactionService)
         {
             _departmentRepository = departmentRepository;
-            _auditLogService = auditLogService;
+            _departmentTransactionService = departmentTransactionService;
         }
 
         [HttpGet]
@@ -46,9 +46,11 @@ namespace PeminjamanRuangAPI.Controllers
                 });
             }
 
-            var departmentId = 
-                await _departmentRepository.CreateDepartmentAsync(department);
-
+            var departmentId =
+                await _departmentTransactionService.CreateDepartmentAsync(
+                    department,
+                    adminId);
+            
             if (departmentId <= 0)
             {
                 return BadRequest(new
@@ -56,15 +58,6 @@ namespace PeminjamanRuangAPI.Controllers
                     message = "Department gagal dibuat"
                 });
             }
-
-            department.Id = departmentId;
-
-            await _auditLogService.LogAsync(
-                adminId,
-                "CREATE",
-                "DEPARTMENT",
-                departmentId,
-                $"Departemen '{department.Name}' dibuat.");
 
             return Ok(new
             {

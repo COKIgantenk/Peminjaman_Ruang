@@ -13,7 +13,7 @@ namespace PeminjamanRuangAPI.Models
         public required string RequesterName { get; set; }
         public required string RequesterDivision { get; set; }
         public string? Description { get; set; }
-        public required string Status { get; set; } // PENDING, APPROVED, REJECTED, DECLINED, CANCELLED
+        public required string Status { get; set; } // PENDING, APPROVED, REJECTED, CANCELLED
         public string? ApprovalNotes { get; set; }
         public int? ApprovedByAdminId { get; set; }
         public DateTime CreatedAt { get; set; }

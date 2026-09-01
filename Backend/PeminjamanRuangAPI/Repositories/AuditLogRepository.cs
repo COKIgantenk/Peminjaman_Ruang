@@ -1,3 +1,4 @@
+using Npgsql;
 using Dapper;
 using PeminjamanRuangAPI.Data;
 using PeminjamanRuangAPI.Models;
@@ -42,6 +43,39 @@ namespace PeminjamanRuangAPI.Repositories
 
             return result > 0;
         }
+
+        public async Task<bool> CreateAuditLogAsync(
+    AuditLog auditLog,
+    NpgsqlConnection connection,
+    NpgsqlTransaction transaction)
+{
+    const string query = @"
+        INSERT INTO audit_log
+        (
+            admin_id,
+            action,
+            entity_type,
+            entity_id,
+            changes,
+            created_at
+        )
+        VALUES
+        (
+            @AdminId,
+            @Action,
+            @EntityType,
+            @EntityId,
+            @Changes,
+            NOW()
+        )";
+
+    var result = await connection.ExecuteAsync(
+        query,
+        auditLog,
+        transaction);
+
+    return result > 0;
+}
 
         public async Task<IEnumerable<AuditLog>> GetAllAuditLogsAsync()
         {

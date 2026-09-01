@@ -1,4 +1,5 @@
 using Dapper;
+using Npgsql;
 using PeminjamanRuangAPI.Data;
 using PeminjamanRuangAPI.Models;
 
@@ -71,6 +72,74 @@ namespace PeminjamanRuangAPI.Repositories
                     query, 
                     new { Id = id });
             }
+        }
+
+        public async Task<Booking?> GetBookingByIdAsync(
+            int id,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction)
+        {
+            const string query = @"
+                SELECT
+                    id AS ""Id"",
+                    user_id AS ""UserId"",
+                    room_id AS ""RoomId"",
+                    booking_date AS ""BookingDate"",
+                    start_time AS ""StartTime"",
+                    end_time AS ""EndTime"",
+                    num_people AS ""NumPeople"",
+                    title AS ""Title"",
+                    requester_name AS ""RequesterName"",
+                    requester_division AS ""RequesterDivision"",
+                    description AS ""Description"",
+                    status AS ""Status"",
+                    approval_notes AS ""ApprovalNotes"",
+                    approved_by_admin_id AS ""ApprovedByAdminId"",
+                    created_at AS ""CreatedAt"",
+                    updated_at AS ""UpdatedAt""
+                FROM bookings
+                WHERE id = @Id";
+        
+            return await connection.QueryFirstOrDefaultAsync<Booking>(
+                query,
+                new { Id = id },
+                transaction);
+        }
+
+        public async Task<bool> LockRoomAsync(
+            int roomId,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction)
+        {
+            const string query = @"
+                SELECT id
+                FROM rooms
+                WHERE id = @RoomId
+                FOR UPDATE";
+        
+            var lockedRoomId =
+                await connection.QueryFirstOrDefaultAsync<int?>(
+                    query,
+                    new { RoomId = roomId },
+                    transaction);
+        
+            return lockedRoomId.HasValue;
+        }
+
+        public async Task<bool?> GetRoomActiveStateAsync(
+            int roomId,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction)
+        {
+            const string query = @"
+                SELECT is_active
+                FROM rooms
+                WHERE id = @RoomId";
+        
+            return await connection.QueryFirstOrDefaultAsync<bool?>(
+                query,
+                new { RoomId = roomId },
+                transaction);
         }
 
         public async Task<IEnumerable<Booking>> GetUserBookingsAsync(int userId)
@@ -216,6 +285,56 @@ namespace PeminjamanRuangAPI.Repositories
             }
         }
 
+        public async Task<int> CreateBookingAsync(
+            Booking booking,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction)
+        {
+            const string query = @"
+                INSERT INTO bookings
+                (
+                    user_id,
+                    room_id,
+                    booking_date,
+                    start_time,
+                    end_time,
+                    num_people,
+                    title,
+                    requester_name,
+                    requester_division,
+                    description,
+                    status,
+                    approval_notes,
+                    approved_by_admin_id,
+                    created_at,
+                    updated_at
+                )
+                VALUES
+                (
+                    @UserId,
+                    @RoomId,
+                    @BookingDate,
+                    @StartTime,
+                    @EndTime,
+                    @NumPeople,
+                    @Title,
+                    @RequesterName,
+                    @RequesterDivision,
+                    @Description,
+                    @Status,
+                    @ApprovalNotes,
+                    @ApprovedByAdminId,
+                    NOW(),
+                    NOW()
+                )
+                RETURNING id";
+        
+            return await connection.ExecuteScalarAsync<int>(
+                query,
+                booking,
+                transaction);
+        }
+        
         public async Task<bool> UpdateBookingAsync(Booking booking)
         {
             using (var connection = _dbConnection.CreateConnection())
@@ -258,6 +377,33 @@ namespace PeminjamanRuangAPI.Repositories
             }
         }
 
+        public async Task<bool> ApproveBookingAsync(
+            int bookingId,
+            int adminId,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction)
+        {
+            const string query = @"
+                UPDATE bookings
+                SET
+                    status = 'APPROVED',
+                    approved_by_admin_id = @AdminId,
+                    updated_at = NOW()
+                WHERE id = @BookingId
+                  AND status = 'PENDING'";
+        
+            var result = await connection.ExecuteAsync(
+                query,
+                new
+                {
+                    BookingId = bookingId,
+                    AdminId = adminId
+                },
+                transaction);
+        
+            return result > 0;
+        }
+
         public async Task<bool> RejectBookingAsync(
             int bookingId, 
             int adminId, 
@@ -288,6 +434,36 @@ namespace PeminjamanRuangAPI.Repositories
             }
         }
 
+        public async Task<bool> RejectBookingAsync(
+            int bookingId,
+            int adminId,
+            string reason,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction)
+        {
+            const string query = @"
+                UPDATE bookings
+                SET
+                    status = 'REJECTED',
+                    approval_notes = @Reason,
+                    approved_by_admin_id = @AdminId,
+                    updated_at = NOW()
+                WHERE id = @BookingId
+                  AND status = 'PENDING'";
+        
+            var result = await connection.ExecuteAsync(
+                query,
+                new
+                {
+                    BookingId = bookingId,
+                    AdminId = adminId,
+                    Reason = reason
+                },
+                transaction);
+        
+            return result > 0;
+        }
+
         public async Task<bool> CancelBookingAsync(int bookingId)
         {
             using (var connection = _dbConnection.CreateConnection())
@@ -306,6 +482,27 @@ namespace PeminjamanRuangAPI.Repositories
 
                 return result > 0;
             }
+        }
+
+        public async Task<bool> CancelBookingAsync(
+            int bookingId,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction)
+        {
+            const string query = @"
+                UPDATE bookings
+                SET
+                    status = 'CANCELLED',
+                    updated_at = NOW()
+                WHERE id = @Id
+                  AND status IN ('PENDING', 'APPROVED')";
+
+            var result = await connection.ExecuteAsync(
+                query,
+                new { Id = bookingId },
+                transaction);
+
+            return result > 0;
         }
 
         public async Task<bool> HasBookingConflictAsync(
@@ -343,6 +540,74 @@ namespace PeminjamanRuangAPI.Repositories
             }
         }
 
+        public async Task<bool> HasBookingConflictAsync(
+            int roomId,
+            DateOnly bookingDate,
+            TimeOnly startTime,
+            TimeOnly endTime,
+            int? excludeBookingId,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction)
+        {
+            const string query = @"
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM bookings
+                    WHERE room_id = @RoomId
+                      AND booking_date = @BookingDate
+                      AND status IN ('PENDING', 'APPROVED')
+                      AND (@ExcludeBookingId IS NULL OR id != @ExcludeBookingId)
+                      AND start_time < @EndTime
+                      AND end_time > @StartTime
+                )";
+        
+            return await connection.ExecuteScalarAsync<bool>(
+                query,
+                new
+                {
+                    RoomId = roomId,
+                    BookingDate = bookingDate,
+                    StartTime = startTime,
+                    EndTime = endTime,
+                    ExcludeBookingId = excludeBookingId
+                },
+                transaction);
+        }
+
+        public async Task<bool> HasApprovedBookingConflictAsync(
+            int roomId,
+            DateOnly bookingDate,
+            TimeOnly startTime,
+            TimeOnly endTime,
+            int excludeBookingId,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction)
+        {
+            const string query = @"
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM bookings
+                    WHERE room_id = @RoomId
+                      AND booking_date = @BookingDate
+                      AND status = 'APPROVED'
+                      AND id != @ExcludeBookingId
+                      AND start_time < @EndTime
+                      AND end_time > @StartTime
+                )";
+        
+            return await connection.ExecuteScalarAsync<bool>(
+                query,
+                new
+                {
+                    RoomId = roomId,
+                    BookingDate = bookingDate,
+                    StartTime = startTime,
+                    EndTime = endTime,
+                    ExcludeBookingId = excludeBookingId
+                },
+                transaction);
+        }
+
         public async Task<bool> IsRoomCurrentlyInUseAsync(int roomId)
         {
             using var connection = _dbConnection.CreateConnection();
@@ -361,6 +626,31 @@ namespace PeminjamanRuangAPI.Repositories
             return await connection.ExecuteScalarAsync<bool>(
                 query,
                 new { RoomId = roomId });
+        }
+
+        public async Task<bool> IsRoomCurrentlyInUseAsync(
+            int roomId,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction)
+        {
+            const string query = @"
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM bookings
+                    WHERE room_id = @RoomId
+                      AND status = 'APPROVED'
+                      AND booking_date = CURRENT_DATE
+                      AND start_time <= LOCALTIME
+                      AND end_time > LOCALTIME
+                )";
+        
+            return await connection.ExecuteScalarAsync<bool>(
+                query,
+                new
+                {
+                    RoomId = roomId
+                },
+                transaction);
         }
 
         public async Task<bool> HasBookingConflictInDateRangeAsync(
@@ -391,6 +681,37 @@ namespace PeminjamanRuangAPI.Repositories
                     EndDate = effectiveEndDate
                 });   
                  
+        }
+
+        public async Task<bool> HasBookingConflictInDateRangeAsync(
+            int roomId,
+            DateOnly startDate,
+            DateOnly? endDate,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction)
+        {
+            const string query = @"
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM bookings
+                    WHERE room_id = @RoomId
+                      AND status IN ('PENDING', 'APPROVED')
+                      AND booking_date >= @StartDate
+                      AND (
+                            @EndDate IS NULL
+                            OR booking_date <= @EndDate
+                          )
+                )";
+        
+            return await connection.ExecuteScalarAsync<bool>(
+                query,
+                new
+                {
+                    RoomId = roomId,
+                    StartDate = startDate,
+                    EndDate = endDate
+                },
+                transaction);
         }
 
         public async Task<IEnumerable<Booking>> GetFinishedBookingsWithoutCleaningAsync()

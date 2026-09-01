@@ -1,4 +1,5 @@
 using Dapper;
+using Npgsql;
 using PeminjamanRuangAPI.Data;
 using PeminjamanRuangAPI.Models;
 
@@ -132,6 +133,44 @@ namespace PeminjamanRuangAPI.Repositories
             }
         }
 
+        public async Task<int> CreateUserAsync(
+            User user,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction)
+        {
+            const string query = @"
+                INSERT INTO users
+                (
+                    email,
+                    password_hash,
+                    full_name,
+                    phone_number,
+                    department_id,
+                    role,
+                    is_active,
+                    created_at,
+                    updated_at
+                )
+                VALUES
+                (
+                    @Email,
+                    @PasswordHash,
+                    @FullName,
+                    @PhoneNumber,
+                    @DepartmentId,
+                    @Role,
+                    @IsActive,
+                    NOW(),
+                    NOW()
+                )
+                RETURNING id";
+        
+            return await connection.ExecuteScalarAsync<int>(
+                query,
+                user,
+                transaction);
+        }
+
         public async Task<bool> UpdateUserAsync(User user)
         {
             using (var connection = _dbConnection.CreateConnection())
@@ -145,6 +184,31 @@ namespace PeminjamanRuangAPI.Repositories
                 var result = await connection.ExecuteAsync(query, user);
                 return result > 0;
             }
+        }
+
+        public async Task<bool> UpdateUserAsync(
+            User user,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction)
+        {
+            const string query = @"
+                UPDATE users
+                SET
+                    full_name = @FullName,
+                    phone_number = @PhoneNumber,
+                    department_id = @DepartmentId,
+                    role = @Role,
+                    is_active = @IsActive,
+                    updated_at = NOW()
+                WHERE id = @Id
+                  AND deleted_at IS NULL";
+        
+            var result = await connection.ExecuteAsync(
+                query,
+                user,
+                transaction);
+        
+            return result > 0;
         }
 
         public async Task<bool> DeleteUserAsync(int id)
@@ -163,6 +227,27 @@ namespace PeminjamanRuangAPI.Repositories
                 var result = await connection.ExecuteAsync(query, new { Id = id });
                 return result > 0;
             }
+        }
+
+        public async Task<bool> DeleteUserAsync(
+            int id,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction)
+        {
+            const string query = @"
+                UPDATE users
+                SET
+                    deleted_at = NOW(),
+                    updated_at = NOW()
+                WHERE id = @Id
+                  AND deleted_at IS NULL";
+        
+            var result = await connection.ExecuteAsync(
+                query,
+                new { Id = id },
+                transaction);
+        
+            return result > 0;
         }
 
         public async Task<User?> GetDeletedUserByIdAsync(int id)
@@ -211,6 +296,27 @@ namespace PeminjamanRuangAPI.Repositories
             return result > 0;
         }
 
+        public async Task<bool> RestoreUserAsync(
+            int id,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction)
+        {
+            const string query = @"
+                UPDATE users
+                SET
+                    deleted_at = NULL,
+                    updated_at = NOW()
+                WHERE id = @Id
+                  AND deleted_at IS NOT NULL";
+        
+            var result = await connection.ExecuteAsync(
+                query,
+                new { Id = id },
+                transaction);
+        
+            return result > 0;
+        }
+
         public async Task<bool> UserExistsAsync(string email)
         {
             using (var connection = _dbConnection.CreateConnection())
@@ -233,6 +339,31 @@ namespace PeminjamanRuangAPI.Repositories
                   AND deleted_at IS NULL";
 
             return await connection.ExecuteScalarAsync<int>(query);
+        }
+
+        public async Task<int> CountActiveAdminAsync(
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction)
+        {
+            const string lockQuery = @"
+                SELECT pg_advisory_xact_lock(82736491);
+            ";
+        
+            await connection.ExecuteAsync(
+                lockQuery,
+                transaction: transaction);
+        
+            const string countQuery = @"
+                SELECT COUNT(*)
+                FROM users
+                WHERE role = 'ADMIN'
+                  AND is_active = TRUE
+                  AND deleted_at IS NULL;
+            ";
+        
+            return await connection.ExecuteScalarAsync<int>(
+                countQuery,
+                transaction: transaction);
         }
 
         public async Task<IEnumerable<User>> GetUsersByRoleAsync(string role)

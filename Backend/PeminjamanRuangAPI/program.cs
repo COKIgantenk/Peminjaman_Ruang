@@ -46,6 +46,15 @@ builder.Services.AddScoped<PasswordService>();
 builder.Services.AddHostedService<BookingCleaningBackgroundService>();
 builder.Services.AddHostedService<MaintenanceActivationBackgroundService>();
 builder.Services.AddScoped<AuditLogService>();
+builder.Services.AddScoped<BookingTransactionService>();
+builder.Services.AddScoped<MaintenanceTransactionService>();
+builder.Services.AddScoped<RoomStatusTransactionService>(); 
+builder.Services.AddScoped<RoomStatusTransactionService>();
+builder.Services.AddScoped<CleaningTransactionService>();
+builder.Services.AddScoped<UserTransactionService>();
+builder.Services.AddScoped<RoomTransactionService>();
+builder.Services.AddScoped<FacilityTransactionService>();
+builder.Services.AddScoped<DepartmentTransactionService>();
 
 builder.Services
     .AddOptions<JwtSettings>()

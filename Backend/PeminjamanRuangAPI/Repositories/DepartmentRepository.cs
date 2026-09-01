@@ -1,4 +1,5 @@
 using Dapper;
+using Npgsql;
 using PeminjamanRuangAPI.Data;
 using PeminjamanRuangAPI.Models;
 
@@ -66,6 +67,32 @@ namespace PeminjamanRuangAPI.Repositories
                     department);
 
             }
+        }
+
+        public async Task<int> CreateDepartmentAsync(
+            Department department,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction)
+        {
+            const string query = @"
+                INSERT INTO departments
+                (
+                    name,
+                    created_at,
+                    updated_at
+                )
+                VALUES
+                (
+                    @Name,
+                    NOW(),
+                    NOW()
+                )
+                RETURNING id";
+        
+            return await connection.ExecuteScalarAsync<int>(
+                query,
+                department,
+                transaction);
         }
     }
 }

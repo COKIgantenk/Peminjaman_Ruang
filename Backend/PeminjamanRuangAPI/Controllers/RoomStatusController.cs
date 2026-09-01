@@ -16,17 +16,20 @@ namespace PeminjamanRuangAPI.Controllers
         private readonly IRoomRepository _roomRepository;
         private readonly IBookingRepository _bookingRepository;
         private readonly AuditLogService _auditLogService;
+        private readonly RoomStatusTransactionService _roomStatusTransactionService;
 
         public RoomStatusController(
             IRoomStatusHistoryRepository roomStatusRepository,
             IRoomRepository roomRepository,
             IBookingRepository bookingRepository,
-            AuditLogService auditLogService)
+            AuditLogService auditLogService,
+            RoomStatusTransactionService roomStatusTransactionService)
         {
             _roomStatusRepository = roomStatusRepository;
             _roomRepository = roomRepository;
             _bookingRepository = bookingRepository;
             _auditLogService = auditLogService;
+            _roomStatusTransactionService = roomStatusTransactionService;
         }
 
         // ADMIN: mengubah status room
@@ -62,23 +65,6 @@ namespace PeminjamanRuangAPI.Controllers
                 });
             }
 
-            // Room yang sedang digunakan tidak boleh dinonaktifkan.
-            if (status != "ACTIVE")
-            {
-                var currentlyInUse =
-                    await _bookingRepository
-                        .IsRoomCurrentlyInUseAsync(roomId);
-
-                if (currentlyInUse)
-                {
-                    return Conflict(new
-                    {
-                        message =
-                            "Room sedang digunakan dan status tidak dapat diubah."
-                    });
-                }
-            }
-
             var adminIdClaim =
                 User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
@@ -90,47 +76,46 @@ namespace PeminjamanRuangAPI.Controllers
                 });
             }
 
-            var previousStatus =
-                await _roomStatusRepository
-                    .GetLatestRoomStatusAsync(roomId);
-
-            var previousStatusName =
-                previousStatus?.Status ?? "UNKNOWN";
-
-            if (previousStatusName == status)
+            var result =
+                await _roomStatusTransactionService.ChangeRoomStatusAsync(
+                    roomId,
+                    status,
+                    request.Reason?.Trim(),
+                    adminId);
+            
+            if (result == -1)
             {
                 return BadRequest(new
                 {
                     message = $"Room sudah berstatus {status}."
                 });
             }
-
-            var success =
-                await _roomStatusRepository.ChangeRoomStatusAsync(
-                    roomId,
-                    status,
-                    request.Reason?.Trim(),
-                    adminId);
-
-            if (!success)
+            
+            if (result == -2)
+            {
+                return Conflict(new
+                {
+                    message =
+                        "Status room tidak dapat diubah manual karena room sedang dalam proses maintenance atau cleaning."
+                });
+            }
+            
+            if (result == -3)
+            {
+                return Conflict(new
+                {
+                    message =
+                        "Room sedang digunakan dan status tidak dapat diubah."
+                });
+            }
+            
+            if (result == 0)
             {
                 return BadRequest(new
                 {
                     message = "Gagal mengubah status room."
                 });
             }
-
-            var auditAction =
-                status == "ACTIVE"
-                    ? "ACTIVATE"
-                    : "DEACTIVATE";
-
-            await _auditLogService.LogAsync(
-                adminId,
-                auditAction,
-                "ROOM",
-                roomId,
-                $"Status room berubah dari {previousStatusName} menjadi {status}");
 
             return Ok(new
             {

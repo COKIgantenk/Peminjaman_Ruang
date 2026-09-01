@@ -1,3 +1,4 @@
+using Npgsql;
 using PeminjamanRuangAPI.Models;
 
 namespace PeminjamanRuangAPI.Repositories
@@ -8,5 +9,10 @@ namespace PeminjamanRuangAPI.Repositories
 
         Task<bool> CreateCancellationAsync(
             BookingCancellation cancellation);
+        Task<bool> CreateCancellationAsync(
+            BookingCancellation cancellation,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction);
     }
+
 }

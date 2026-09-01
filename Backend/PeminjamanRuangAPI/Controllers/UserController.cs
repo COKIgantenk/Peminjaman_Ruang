@@ -16,18 +16,18 @@ namespace PeminjamanRuangAPI.Controllers
         private readonly IUserRepository _userRepository;
         private readonly PasswordService _passwordService;
         private readonly IDepartmentRepository _departmentRepository;
-        private readonly AuditLogService _auditLogService;
+        private readonly UserTransactionService _userTransactionService;
 
         public UserController(
             IUserRepository userRepository,
             PasswordService passwordService,
             IDepartmentRepository departmentRepository,
-            AuditLogService auditLogService)
+            UserTransactionService userTransactionService)
         {
             _userRepository = userRepository;
             _passwordService = passwordService;
             _departmentRepository = departmentRepository;
-            _auditLogService = auditLogService;
+            _userTransactionService = userTransactionService;
         }
 
         [HttpGet("{id}")]
@@ -120,32 +120,28 @@ namespace PeminjamanRuangAPI.Controllers
             var user = new User
             {
                 Email = request.Email,
-                PasswordHash = passwordHash, 
                 FullName = request.FullName,
                 PhoneNumber = request.PhoneNumber,
                 DepartmentId = request.DepartmentId,
-                Role = role,
+                Role = request.Role,
+                PasswordHash = passwordHash,
                 IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
             };
 
-            var userId = await _userRepository.CreateUserAsync(user);
-
+            var userId = await _userTransactionService.CreateUserAsync(
+                user,
+                adminId);
+            
             if (userId <= 0)
             {
-                return BadRequest(new 
-                { 
-                    message = "User gagal dibuat." 
+                return BadRequest(new
+                {
+                    message = "User gagal dibuat."
                 });
             }
 
-            user.Id = userId;
-
-            await _auditLogService.LogAsync(
-                adminId,
-                "CREATE",
-                "USER",
-                userId,
-                $"User '{user.Email}' dengan role '{user.Role}' dibuat.");
 
             return Ok(new 
             { 
@@ -247,24 +243,6 @@ namespace PeminjamanRuangAPI.Controllers
                 }
             }
 
-            var removingAdminAccess = 
-                user.Role == "ADMIN"
-                && user.IsActive
-                && (role != "ADMIN" || !request.IsActive);
-
-            if (removingAdminAccess)
-            {
-                var activeAdminCount =
-                    await _userRepository.CountActiveAdminAsync();
-
-                if (activeAdminCount <= 1)
-                {
-                    return BadRequest(new
-                    {
-                        message = "Admin aktif terakhir tidak dapat dinonaktifkan atau diubah menjadi USER."
-                    });
-                }
-            }
 
             var oldFullName = user.FullName;
             var oldPhoneNumber = user.PhoneNumber;
@@ -278,30 +256,42 @@ namespace PeminjamanRuangAPI.Controllers
             user.Role = role;
             user.IsActive = request.IsActive;
             
-
-            var success = 
-                await _userRepository.UpdateUserAsync(user);
-
-            if (!success)
+            var removesAdminAccess =
+                oldRole == "ADMIN" &&
+                oldIsActive &&
+                (user.Role != "ADMIN" || !user.IsActive);
+            
+            if (removesAdminAccess)
             {
-                return BadRequest(new 
-                { 
-                    message = "Gagal memperbarui user." 
-                });
+                var activeAdminCount =
+                    await _userRepository.CountActiveAdminAsync();
+            
+                if (activeAdminCount <= 1)
+                {
+                    return BadRequest(new
+                    {
+                        message = "Tidak dapat menonaktifkan atau mengubah role admin terakhir."
+                    });
+                }
             }
 
-
-            await _auditLogService.LogAsync(
-                adminId,
-                "UPDATE",
-                "USER",
-                user.Id,
-                $"User '{user.Email}' diperbarui. " +
-                $"FullName: '{oldFullName}' -> '{user.FullName}', " +
-                $"PhoneNumber: '{oldPhoneNumber}' -> '{user.PhoneNumber}', " +
-                $"DepartmentId: {oldDepartmentId} -> {user.DepartmentId}, " +
-                $"Role: '{oldRole}' -> '{user.Role}', " +
-                $"IsActive: {oldIsActive} -> {user.IsActive}.");
+            var success =
+                await _userTransactionService.UpdateUserAsync(
+                    user,
+                    adminId,
+                    oldFullName,
+                    oldPhoneNumber,
+                    oldDepartmentId,
+                    oldRole,
+                    oldIsActive);
+            
+            if (!success)
+            {
+                return BadRequest(new
+                {
+                    message = "Gagal memperbarui user."
+                });
+            }
 
             return Ok(new 
             { 
@@ -356,23 +346,17 @@ namespace PeminjamanRuangAPI.Controllers
                 }
             }
 
-            var success = 
-                await _userRepository.DeleteUserAsync(id);
-
+            var success = await _userTransactionService.DeleteUserAsync(
+                user,
+                adminId);
+            
             if (!success)
             {
-                return BadRequest(new 
-                { 
-                    message = "Gagal menghapus user." 
+                return BadRequest(new
+                {
+                    message = "Gagal menghapus user."
                 });
             }
-
-            await _auditLogService.LogAsync(
-                adminId,
-                "DELETE",
-                "USER",
-                user.Id,
-                $"User '{user.Email}' dengan nama '{user.FullName}' dihapus.");
 
             return Ok(new 
             { 
@@ -416,23 +400,17 @@ namespace PeminjamanRuangAPI.Controllers
                 });
             }
         
-            var success =
-                await _userRepository.RestoreUserAsync(id);
-        
+            var success = await _userTransactionService.RestoreUserAsync(
+                deletedUser,
+                adminId);
+            
             if (!success)
             {
                 return BadRequest(new
                 {
-                    message = "User gagal dipulihkan."
+                    message = "Gagal memulihkan user."
                 });
             }
-        
-            await _auditLogService.LogAsync(
-                adminId,
-                "RESTORE",
-                "USER",
-                deletedUser.Id,
-                $"User '{deletedUser.Email}' dengan nama '{deletedUser.FullName}' dipulihkan.");
         
             return Ok(new
             {

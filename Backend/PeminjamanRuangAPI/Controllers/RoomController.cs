@@ -15,16 +15,16 @@ namespace PeminjamanRuangAPI.Controllers
     {
         private readonly IRoomRepository _roomRepository;
         private readonly IFacilityRepository _facilityRepository;
-        private readonly AuditLogService _auditLogService;
+        private readonly RoomTransactionService _roomTransactionService;
 
         public RoomController(
             IRoomRepository roomRepository,
             IFacilityRepository facilityRepository,
-            AuditLogService auditLogService)
+            RoomTransactionService roomTransactionService)
         {
             _roomRepository = roomRepository;
             _facilityRepository = facilityRepository;
-            _auditLogService = auditLogService;
+            _roomTransactionService = roomTransactionService;
         }
 
         [HttpGet]
@@ -199,8 +199,10 @@ namespace PeminjamanRuangAPI.Controllers
             };
 
             var roomId =
-                await _roomRepository.CreateRoomAsync(room);
-
+                await _roomTransactionService.CreateRoomAsync(
+                    room,
+                    adminId);
+            
             if (roomId <= 0)
             {
                 return BadRequest(new
@@ -208,15 +210,6 @@ namespace PeminjamanRuangAPI.Controllers
                     message = "Room gagal dibuat"
                 });
             }
-
-            room.Id = roomId;
-
-            await _auditLogService.LogAsync(
-                adminId,
-                "CREATE",
-                "ROOM",
-                room.Id,
-                $"Room '{room.Name}' dibuat. Location: {room.Location}, Capacity : {room.Capacity}.");
 
             return Ok(new
             {
@@ -270,8 +263,14 @@ namespace PeminjamanRuangAPI.Controllers
             room.ImageUrl = request.ImageUrl;
             room.IsActive = request.IsActive;
 
-            var success = await _roomRepository.UpdateRoomAsync(room);
-
+            var success =
+                await _roomTransactionService.UpdateRoomAsync(
+                    room,
+                    adminId,
+                    oldName,
+                    oldLocation,
+                    oldCapacity);
+            
             if (!success)
             {
                 return BadRequest(new
@@ -279,16 +278,6 @@ namespace PeminjamanRuangAPI.Controllers
                     message = "Room gagal diperbarui."
                 });
             }
-
-            await _auditLogService.LogAsync(
-                adminId,
-                "UPDATE",
-                "ROOM",
-                room.Id,
-                $"Room diperbarui. " +
-                $"Name: '{oldName}' -> '{room.Name}', " +
-                $"Location: '{oldLocation}' -> '{room.Location}', " +
-                $"Capacity: {oldCapacity} -> {room.Capacity}.");
 
             return Ok(new
             {

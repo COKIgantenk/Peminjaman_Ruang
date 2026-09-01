@@ -1,5 +1,4 @@
 using Npgsql;
-using System.Data;
 
 namespace PeminjamanRuangAPI.Data
 {
@@ -12,16 +11,17 @@ namespace PeminjamanRuangAPI.Data
 
         public DatabaseConnection(IConfiguration configuration)
         {
-            _connectionString = configuration.GetConnectionString("DefaultConnection")
+            _connectionString = 
+                configuration.GetConnectionString("DefaultConnection")
                ?? throw new InvalidOperationException(
                 "Connection string 'DefaultConnection' not found in configuration.");
                
         }
 
         /// <summary>
-        /// Buka koneksi ke database
+        /// Membuat koneksi PostgreSQL
         /// </summary>
-        public IDbConnection CreateConnection()
+        public NpgsqlConnection CreateConnection()
         {
             return new NpgsqlConnection(_connectionString);
         }

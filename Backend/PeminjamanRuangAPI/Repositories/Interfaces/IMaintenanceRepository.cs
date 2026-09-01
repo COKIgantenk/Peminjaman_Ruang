@@ -1,3 +1,4 @@
+using Npgsql;
 using PeminjamanRuangAPI.Models;
 
 namespace PeminjamanRuangAPI.Repositories
@@ -37,13 +38,39 @@ namespace PeminjamanRuangAPI.Repositories
             int roomId,
             int adminId);
 
+        Task<bool> CompleteMaintenanceWithStatusAsync(
+            int maintenanceId,
+            int roomId,
+            int adminId,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction);
+
+        Task<int> CreateMaintenanceWithStatusAsync(
+            Maintenance maintenance,
+            string reason,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction);
+
         Task<bool> HasMaintenanceConflictAsync(
             int roomId,
             DateOnly bookingDate);
+
+        Task<bool> HasMaintenanceConflictAsync(
+            int roomId,
+            DateOnly bookingDate,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction);
 
         Task<bool> HasMaintenanceScheduleConflictAsync(
             int roomId,
             DateOnly startDate,
             DateOnly? endDate);
+        
+        Task<bool> HasMaintenanceScheduleConflictAsync(
+            int roomId,
+            DateOnly startDate,
+            DateOnly? endDate,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction);
     }
 }

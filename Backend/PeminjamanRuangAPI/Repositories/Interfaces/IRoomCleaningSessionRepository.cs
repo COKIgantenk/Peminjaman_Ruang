@@ -1,3 +1,4 @@
+using Npgsql;   
 using PeminjamanRuangAPI.Models;
 
 namespace PeminjamanRuangAPI.Repositories
@@ -20,16 +21,23 @@ namespace PeminjamanRuangAPI.Repositories
             string cleaningDuration,
             int? customDurationMinutes);
 
+        Task<bool> SetCleaningDurationAsync(
+            int cleaningSessionId,
+            string cleaningDuration,
+            int? customDurationMinutes,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction);
+
         Task<IEnumerable<RoomCleaningSession>>
             GetCleaningSessionsReadyToCompleteAsync();
 
         Task<bool> CompleteAutomaticCleaningWithStatusAsync(
             int cleaningSessionId,
             int roomId);
-
-        Task<bool> CompleteCleaningWithStatusAsync(
-            int cleaningSessionId,
-            int roomId,
-            int adminId);
+            
+        Task<RoomCleaningSession?> GetCleaningSessionByIdForUpdateAsync(
+            int id,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction);
     }
 }

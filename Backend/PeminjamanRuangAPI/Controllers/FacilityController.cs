@@ -14,14 +14,14 @@ namespace PeminjamanRuangAPI.Controllers
     public class FacilityController : ControllerBase
     {
         private readonly IFacilityRepository _facilityRepository;
-        private readonly AuditLogService _auditLogService;
+        private readonly FacilityTransactionService _facilityTransactionService;
 
         public FacilityController(
             IFacilityRepository facilityRepository,
-            AuditLogService auditLogService)
+            FacilityTransactionService facilityTransactionService)
         {
             _facilityRepository = facilityRepository;
-            _auditLogService = auditLogService;
+            _facilityTransactionService = facilityTransactionService;
         }
 
         [HttpGet]
@@ -89,8 +89,10 @@ namespace PeminjamanRuangAPI.Controllers
             }
 
             var facilityId =
-                await _facilityRepository.CreateFacilityAsync(facility);
-
+                await _facilityTransactionService.CreateFacilityAsync(
+                    facility,
+                    adminId);
+            
             if (facilityId <= 0)
             {
                 return BadRequest(new
@@ -98,15 +100,6 @@ namespace PeminjamanRuangAPI.Controllers
                     message = "Facility gagal dibuat"
                 });
             }
-
-            facility.Id = facilityId;
-
-            await _auditLogService.LogAsync(
-                adminId,
-                "CREATE",
-                "FACILITY",
-                facilityId,
-                $"Facility'{facility.Name}' dibuat.");
 
             return Ok(new
             {
@@ -147,8 +140,13 @@ namespace PeminjamanRuangAPI.Controllers
             facility.Name = request.Name;
             facility.Description = request.Description;
 
-            var success = await _facilityRepository.UpdateFacilityAsync(facility);
-
+            var success =
+                await _facilityTransactionService.UpdateFacilityAsync(
+                    facility,
+                    adminId,
+                    oldName,
+                    oldDescription);
+            
             if (!success)
             {
                 return BadRequest(new
@@ -156,15 +154,6 @@ namespace PeminjamanRuangAPI.Controllers
                     message = "Facility gagal diperbarui."
                 });
             }
-
-            await _auditLogService.LogAsync(
-                adminId,
-                "UPDATE",
-                "FACILITY",
-                facility.Id,
-                $"Facility diperbarui. " +
-                $"Name: '{oldName}' -> '{facility.Name}', " +
-                $"Description: '{oldDescription}' -> '{facility.Description}'.");
 
             return Ok(new
             {
@@ -197,8 +186,11 @@ namespace PeminjamanRuangAPI.Controllers
                 });
             }
 
-            var success = await _facilityRepository.DeleteFacilityAsync(id);
-
+            var success =
+                await _facilityTransactionService.DeleteFacilityAsync(
+                    facility,
+                    adminId);
+            
             if (!success)
             {
                 return BadRequest(new
@@ -206,13 +198,6 @@ namespace PeminjamanRuangAPI.Controllers
                     message = "Facility gagal dihapus."
                 });
             }
-
-            await _auditLogService.LogAsync(
-                adminId,
-                "DELETE",
-                "FACILITY",
-                facility.Id,
-                $"Facility '{facility.Name}' dihapus.");
 
             return Ok(new
             {

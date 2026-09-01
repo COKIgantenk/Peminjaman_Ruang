@@ -16,18 +16,18 @@ namespace PeminjamanRuangAPI.Controllers
         private readonly IMaintenanceRepository _maintenanceRepository;
         private readonly IRoomRepository _roomRepository;
         private readonly IBookingRepository _bookingRepository;
-        private readonly AuditLogService _auditLogService;
+        private readonly MaintenanceTransactionService _maintenanceTransactionService;
 
         public MaintenanceController(
             IMaintenanceRepository maintenanceRepository,
             IRoomRepository roomRepository,
             IBookingRepository bookingRepository,
-            AuditLogService auditLogService)
+            MaintenanceTransactionService maintenanceTransactionService)
         {
             _maintenanceRepository = maintenanceRepository;
             _roomRepository = roomRepository;
             _bookingRepository = bookingRepository;
-            _auditLogService = auditLogService;
+            _maintenanceTransactionService = maintenanceTransactionService;
         }
 
         [HttpPost]
@@ -147,10 +147,26 @@ namespace PeminjamanRuangAPI.Controllers
             };
 
             var maintenanceId =
-                await _maintenanceRepository.CreateMaintenanceWithStatusAsync(
+                await _maintenanceTransactionService.CreateMaintenanceAsync(
                     maintenance,
                     request.Description.Trim());
-
+            
+            if (maintenanceId == -1)
+            {
+                return Conflict(new
+                {
+                    message = "Room sudah memiliki jadwal maintenance pada tanggal tersebut."
+                });
+            }
+            
+            if (maintenanceId == -2)
+            {
+                return Conflict(new
+                {
+                    message = "Maintenance bertabrakan dengan booking yang sudah terdaftar."
+                });
+            }
+            
             if (maintenanceId <= 0)
             {
                 return BadRequest(new
@@ -158,16 +174,6 @@ namespace PeminjamanRuangAPI.Controllers
                     message = "Maintenance gagal dibuat."
                 });
             }
-
-            await _auditLogService.LogAsync(
-                adminId,
-                "CREATE",
-                "MAINTENANCE",
-                maintenanceId,
-                $"Maintenance dibuat untuk Room {request.RoomId}, " +
-                $"tanggal {request.StartDate}" +
-                $"{(request.EndDate.HasValue ? $" sampai {request.EndDate.Value}" : "")}. " +
-                $"Priority: {priority}.");
 
             return Ok(new
             {
@@ -279,8 +285,7 @@ namespace PeminjamanRuangAPI.Controllers
             }
         
             var completed =
-                await _maintenanceRepository
-                    .CompleteMaintenanceWithStatusAsync(
+                await _maintenanceTransactionService.CompleteMaintenanceAsync(
                         id,
                         maintenance.RoomId,
                         adminId);
@@ -292,17 +297,10 @@ namespace PeminjamanRuangAPI.Controllers
                     message = "Gagal menyelesaikan maintenance."
                 });
             }
-
-            await _auditLogService.LogAsync(
-                adminId,
-                "COMPLETE",
-                "MAINTENANCE",
-                maintenance.Id,
-                $"Maintenance Room {maintenance.RoomId} diselesaikan dan room kembali ACTIVE.");
         
             return Ok(new
             {
-                message = "Maintenance berhasil diselesaikan dan room kembali aktif."
+                message = "Maintenance berhasil diselesaikan."
             });
         }
     }

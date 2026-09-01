@@ -1,4 +1,5 @@
 using Dapper;
+using Npgsql;
 using PeminjamanRuangAPI.Data;
 using PeminjamanRuangAPI.Models;
 
@@ -76,6 +77,34 @@ namespace PeminjamanRuangAPI.Repositories
                 facility);
         }
 
+        public async Task<int> CreateFacilityAsync(
+            Facility facility,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction)
+        {
+            const string query = @"
+                INSERT INTO facilities
+                    (
+                        name,
+                        description,
+                        created_at,
+                        updated_at
+                    )
+                    VALUES
+                    (
+                        @Name,
+                        @Description,
+                        NOW(),
+                        NOW()
+                    )
+                    RETURNING id";
+        
+            return await connection.ExecuteScalarAsync<int>(
+                query,
+                facility,
+                transaction);
+        }
+
         public async Task<bool> UpdateFacilityAsync(Facility facility)
         {
             using var connection = _dbConnection.CreateConnection();
@@ -93,6 +122,27 @@ namespace PeminjamanRuangAPI.Repositories
             return result > 0;
         }
 
+        public async Task<bool> UpdateFacilityAsync(
+            Facility facility,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction)
+        {
+            const string query = @"
+                UPDATE facilities
+                SET
+                    name = @Name,
+                    description = @Description,
+                    updated_at = NOW()
+                WHERE id = @Id";
+        
+            var result = await connection.ExecuteAsync(
+                query,
+                facility,
+                transaction);
+        
+            return result > 0;
+        }
+
         public async Task<bool> DeleteFacilityAsync(int id)
         {
             using var connection = _dbConnection.CreateConnection();
@@ -106,6 +156,23 @@ namespace PeminjamanRuangAPI.Repositories
                 new { Id = id }
             );
 
+            return result > 0;
+        }
+
+        public async Task<bool> DeleteFacilityAsync(
+            int id,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction)
+        {
+            const string query = @"
+                DELETE FROM facilities
+                WHERE id = @Id";
+        
+            var result = await connection.ExecuteAsync(
+                query,
+                new { Id = id },
+                transaction);
+        
             return result > 0;
         }
     }
