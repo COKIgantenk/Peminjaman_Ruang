@@ -147,6 +147,22 @@ namespace PeminjamanRuangAPI.Controllers
                 });
             }
 
+            if (string.IsNullOrWhiteSpace(request.RequesterName))
+            {
+                return BadRequest(new
+                {
+                    message = "Nama pemohon harus diisi."
+                });
+            }
+            
+            if (string.IsNullOrWhiteSpace(request.RequesterDivision))
+            {
+                return BadRequest(new
+                {
+                    message = "Divisi pemohon harus diisi."
+                });
+            }
+
             var booking = new Booking
             {
                 UserId = userId,
@@ -155,10 +171,16 @@ namespace PeminjamanRuangAPI.Controllers
                 StartTime = request.StartTime,
                 EndTime = request.EndTime,
                 NumPeople = request.NumPeople,
-                Title = request.Title,
-                RequesterName = request.RequesterName,
-                RequesterDivision = request.RequesterDivision,
-                Description = request.Description,
+                Title = string.IsNullOrWhiteSpace(request.Title)
+                    ? null
+                    : request.Title.Trim(),
+                
+                RequesterName = request.RequesterName.Trim(),
+                RequesterDivision = request.RequesterDivision.Trim(),
+                
+                Description = string.IsNullOrWhiteSpace(request.Description)
+                    ? null
+                    : request.Description.Trim(),
 
                 Status = "PENDING",
 

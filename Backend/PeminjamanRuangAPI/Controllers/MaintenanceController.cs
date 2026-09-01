@@ -44,6 +44,30 @@ namespace PeminjamanRuangAPI.Controllers
                 });
             }
 
+            if (string.IsNullOrWhiteSpace(request.MaintenanceCategory))
+            {
+                return BadRequest(new
+                {
+                    message = "Kategori maintenance harus diisi."
+                });
+            }
+            
+            if (string.IsNullOrWhiteSpace(request.PriorityLevel))
+            {
+                return BadRequest(new
+                {
+                    message = "Priority level harus diisi."
+                });
+            }
+            
+            if (string.IsNullOrWhiteSpace(request.Description))
+            {
+                return BadRequest(new
+                {
+                    message = "Deskripsi maintenance harus diisi."
+                });
+            }
+
             if (request.StartDate <
                 DateOnly.FromDateTime(DateTime.Today))
             {
@@ -138,8 +162,15 @@ namespace PeminjamanRuangAPI.Controllers
                 RoomId = request.RoomId,
                 MaintenanceCategory = request.MaintenanceCategory.Trim(),
                 PriorityLevel = priority,
-                FacilitiesServiced = request.FacilitiesServiced?.Trim(),
-                Documentation = request.Documentation?.Trim(),
+                FacilitiesServiced =
+                    string.IsNullOrWhiteSpace(request.FacilitiesServiced)
+                        ? null
+                        : request.FacilitiesServiced.Trim(),
+                
+                Documentation =
+                    string.IsNullOrWhiteSpace(request.Documentation)
+                        ? null
+                        : request.Documentation.Trim(),
                 Description = request.Description.Trim(),
                 CreatedByAdminId = adminId,
                 StartDate = request.StartDate,
