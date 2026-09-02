@@ -9,13 +9,26 @@ using PeminjamanRuangAPI.Repositories;
 using PeminjamanRuangAPI.Configuration;
 using PeminjamanRuangAPI.Data.TypeHandlers;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor |
+        ForwardedHeaders.XForwardedProto;
+
+    // Untuk environment reverse proxy/cloud seperti Railway.
+    // Proxy address tidak selalu statis, jadi jangan batasi ke localhost saja.
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 SqlMapper.AddTypeHandler(new DateOnlyTypeHandler());
 SqlMapper.AddTypeHandler(new TimeOnlyTypeHandler());
@@ -232,6 +245,8 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+app.UseForwardedHeaders();
+
 //Global exception handler
 app.UseExceptionHandler();
 
@@ -280,5 +295,5 @@ app.MapHealthChecks(
         ResponseWriter =
             HealthCheckResponseWriter.WriteResponse
     });
-    
+
 app.Run();
