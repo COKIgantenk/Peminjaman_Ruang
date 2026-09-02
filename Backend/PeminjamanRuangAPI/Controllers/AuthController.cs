@@ -15,15 +15,18 @@ namespace PeminjamanRuangAPI.Controllers
         private readonly IUserRepository _userRepository;
         private readonly PasswordService _passwordService;
         private readonly JwtService _jwtService;
+        private readonly IDepartmentRepository _departmentRepository;
 
         public AuthController(
             IUserRepository userRepository,
             PasswordService passwordService,
-            JwtService jwtService)
+            JwtService jwtService,
+            IDepartmentRepository departmentRepository)
         {
             _userRepository = userRepository;
             _passwordService = passwordService;
             _jwtService = jwtService;
+            _departmentRepository = departmentRepository;
         }
 
         [AllowAnonymous]
@@ -32,6 +35,7 @@ namespace PeminjamanRuangAPI.Controllers
         public async Task<ActionResult<LoginResponseDto>> Login(
             [FromBody] LoginRequestDto request)
         {
+            request.Email = request.Email.Trim().ToLowerInvariant();
             var user = await _userRepository.GetUserByEmailAsync(request.Email);
 
             if (user == null)
@@ -81,8 +85,29 @@ namespace PeminjamanRuangAPI.Controllers
         [AllowAnonymous]
         [HttpPost("register")]
         [EnableRateLimiting("AuthPolicy")]
-        public async Task<ActionResult> Register([FromBody] RegisterRequestDto request)
+        public async Task<ActionResult> Register(
+            [FromBody] RegisterRequestDto request)
         {
+            request.Email = request.Email.Trim().ToLowerInvariant();
+            request.FullName = request.FullName.Trim();
+            request.PhoneNumber = request.PhoneNumber.Trim();
+
+            if (string.IsNullOrWhiteSpace(request.FullName))
+            {
+                return BadRequest(new
+                {
+                    message = "Nama lengkap harus diisi."
+                });
+            }
+            
+            if (string.IsNullOrWhiteSpace(request.PhoneNumber))
+            {
+                return BadRequest(new
+                {
+                    message = "Nomor telepon harus diisi."
+                });
+            }
+
             var exist = await _userRepository.UserExistsAsync(request.Email);
 
             if (exist)
@@ -90,6 +115,18 @@ namespace PeminjamanRuangAPI.Controllers
                 return Conflict(new
                 {
                     message = "User dengan email tersebut sudah ada."
+                });
+            }
+
+            var department =
+                await _departmentRepository
+                    .GetDepartmentByIdAsync(request.DepartmentId);
+            
+            if (department == null)
+            {
+                return BadRequest(new
+                {
+                    message = "Department tidak ditemukan."
                 });
             }
 
