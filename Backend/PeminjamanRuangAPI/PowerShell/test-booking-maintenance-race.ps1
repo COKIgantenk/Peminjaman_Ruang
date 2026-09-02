@@ -3,7 +3,11 @@ param(
     [string]$UserToken,
 
     [Parameter(Mandatory = $true)]
-    [string]$AdminToken
+    [string]$AdminToken,
+
+    [int]$RoomId = 4,
+
+    [string]$RaceDate = "2026-09-11"
 )
 
 $bookingUrl =
@@ -13,11 +17,11 @@ $maintenanceUrl =
     "https://localhost:5074/api/Maintenance"
 
 $bookingJob = Start-Job -ScriptBlock {
-    param($Url, $Token)
+    param($Url, $Token, $RoomId, $RaceDate)
 
     $body = @{
-        roomId = 4
-        bookingDate = "2026-09-06"
+        roomId = $RoomId
+        bookingDate = $RaceDate
         startTime = "10:00:00"
         endTime = "11:00:00"
         numPeople = 2
@@ -50,20 +54,24 @@ $bookingJob = Start-Job -ScriptBlock {
             Remove-Item $file -Force
         }
     }
-} -ArgumentList $bookingUrl, $UserToken
+} -ArgumentList `
+    $bookingUrl,
+    $UserToken,
+    $RoomId,
+    $RaceDate
 
 $maintenanceJob = Start-Job -ScriptBlock {
-    param($Url, $Token)
+    param($Url, $Token, $RoomId, $RaceDate)
 
     $body = @{
-        roomId = 4
+        roomId = $RoomId
         maintenanceCategory = "GENERAL"
         priorityLevel = "MEDIUM"
         facilitiesServiced = $null
         documentation = $null
-        description = "Step 2.9 booking maintenance race"
-        startDate = "2026-09-06"
-        endDate = "2026-09-06"
+        description = "Step 6.4 booking maintenance race"
+        startDate = $RaceDate
+        endDate = $RaceDate
     } | ConvertTo-Json
 
     $file =
@@ -89,7 +97,11 @@ $maintenanceJob = Start-Job -ScriptBlock {
             Remove-Item $file -Force
         }
     }
-} -ArgumentList $maintenanceUrl, $AdminToken
+} -ArgumentList `
+    $maintenanceUrl,
+    $AdminToken,
+    $RoomId,
+    $RaceDate
 
 Wait-Job $bookingJob, $maintenanceJob | Out-Null
 

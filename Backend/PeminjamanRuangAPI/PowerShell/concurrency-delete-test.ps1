@@ -1,36 +1,94 @@
-$token6 = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2IiwiZW1haWwiOiJhZG1pbi50ZXN0QGdtYWlsLmNvbSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWUiOiJBa3VuIEFkbWluIiwiaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9yb2xlIjoiQURNSU4iLCJleHAiOjE3ODgyNDM1OTAsImlzcyI6IlBlbWluamFtYW5SdWFuZ0FQSSIsImF1ZCI6IlBlbWluamFtYW5SdWFuZ0NsaWVudCJ9.DFcsep2keX8qOHil8okAF0QWIm_YrN7pOHjR36hhN6Q"
-$token22 = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyMiIsImVtYWlsIjoiYWRtaW4uaHR0cHNAZ21haWwuY29tIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZSI6IkFkbWluIEh0dHBzIiwiaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9yb2xlIjoiQURNSU4iLCJleHAiOjE3ODgyNDM1NjksImlzcyI6IlBlbWluamFtYW5SdWFuZ0FQSSIsImF1ZCI6IlBlbWluamFtYW5SdWFuZ0NsaWVudCJ9.HF-iKfv1E4UeFbuvysLPBivySz2XM8X1tBO-GTm81qM"
+param(
+    [Parameter(Mandatory = $true)]
+    [int]$AdminIdA,
 
-Write-Host "Menjalankan dua DELETE request secara bersamaan..."
+    [Parameter(Mandatory = $true)]
+    [string]$TokenA,
 
-$job1 = Start-Job -ScriptBlock {
-    param($token)
+    [Parameter(Mandatory = $true)]
+    [int]$AdminIdB,
 
-    curl.exe -k -s `
-        -X DELETE `
-        "https://localhost:5074/api/User/22" `
-        -H "Authorization: Bearer $token" `
-        -w "`nHTTP_STATUS:%{http_code}"
-} -ArgumentList $token6
+    [Parameter(Mandatory = $true)]
+    [string]$TokenB
+)
 
-$job2 = Start-Job -ScriptBlock {
-    param($token)
+$baseUrl = "https://localhost:5074/api/User"
 
-    curl.exe -k -s `
-        -X DELETE `
-        "https://localhost:5074/api/User/6" `
-        -H "Authorization: Bearer $token" `
-        -w "`nHTTP_STATUS:%{http_code}"
-} -ArgumentList $token22
+$jobScript = {
+    param(
+        $ActorToken,
+        $TargetAdminId,
+        $BaseUrl,
+        $RequestName
+    )
 
-Wait-Job $job1, $job2 | Out-Null
+    try {
+        $result = & curl.exe `
+            -k `
+            -s `
+            -w "`nHTTP_STATUS:%{http_code}" `
+            -X DELETE `
+            "$BaseUrl/$TargetAdminId" `
+            -H "Authorization: Bearer $ActorToken"
 
-Write-Host ""
-Write-Host "=== Admin 6 -> DELETE Admin 22 ==="
-Receive-Job $job1
+        $resultText = $result -join "`n"
 
-Write-Host ""
-Write-Host "=== Admin 22 -> DELETE Admin 6 ==="
-Receive-Job $job2
+        $statusMatch =
+            [regex]::Match(
+                $resultText,
+                "HTTP_STATUS:(\d{3})"
+            )
 
-Remove-Job $job1, $job2
+        $statusCode =
+            if ($statusMatch.Success) {
+                [int]$statusMatch.Groups[1].Value
+            }
+            else {
+                0
+            }
+
+        $responseBody =
+            $resultText `
+                -replace "`nHTTP_STATUS:\d{3}$", ""
+
+        [PSCustomObject]@{
+            Request = $RequestName
+            TargetAdminId = $TargetAdminId
+            StatusCode = $statusCode
+            Body = $responseBody
+        }
+    }
+    catch {
+        [PSCustomObject]@{
+            Request = $RequestName
+            TargetAdminId = $TargetAdminId
+            StatusCode = 0
+            Body = $_.Exception.Message
+        }
+    }
+}
+
+Write-Host "Menjalankan concurrent admin delete..."
+
+$jobA = Start-Job `
+    -ScriptBlock $jobScript `
+    -ArgumentList `
+        $TokenA,
+        $AdminIdB,
+        $baseUrl,
+        "Admin $AdminIdA -> delete Admin $AdminIdB"
+
+$jobB = Start-Job `
+    -ScriptBlock $jobScript `
+    -ArgumentList `
+        $TokenB,
+        $AdminIdA,
+        $baseUrl,
+        "Admin $AdminIdB -> delete Admin $AdminIdA"
+
+Wait-Job $jobA, $jobB | Out-Null
+
+Receive-Job $jobA
+Receive-Job $jobB
+
+Remove-Job $jobA, $jobB

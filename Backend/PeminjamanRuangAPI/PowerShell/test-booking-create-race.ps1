@@ -1,6 +1,14 @@
 param(
     [Parameter(Mandatory = $true)]
-    [string]$Token
+    [string]$Token,
+
+    [int]$RoomId = 4,
+
+    [string]$BookingDate = "2026-09-10",
+
+    [string]$StartTime = "14:00:00",
+
+    [string]$EndTime = "15:00:00"
 )
 
 $uri = "https://localhost:5074/api/Booking"
@@ -9,14 +17,18 @@ $jobScript = {
     param(
         $RequestName,
         $Uri,
-        $Token
+        $Token,
+        $RoomId,
+        $BookingDate,
+        $StartTime,
+        $EndTime
     )
 
     $body = @{
-        roomId = 4
-        bookingDate = "2026-09-05"
-        startTime = "14:00:00"
-        endTime = "15:00:00"
+        roomId = $RoomId
+        bookingDate = $BookingDate
+        startTime = $StartTime
+        endTime = $EndTime
         numPeople = 2
         title = "Race Create $RequestName"
         requesterName = "User IT"
@@ -78,11 +90,15 @@ $jobScript = {
 
 $jobA = Start-Job `
     -ScriptBlock $jobScript `
-    -ArgumentList "A", $uri, $Token
+    -ArgumentList `
+    "A", $uri, $Token, `
+    $RoomId, $BookingDate, $StartTime, $EndTime
 
 $jobB = Start-Job `
     -ScriptBlock $jobScript `
-    -ArgumentList "B", $uri, $Token
+    -ArgumentList `
+    "B", $uri, $Token, `
+    $RoomId, $BookingDate, $StartTime, $EndTime
 
 Wait-Job $jobA, $jobB | Out-Null
 

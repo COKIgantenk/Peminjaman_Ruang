@@ -1,67 +1,129 @@
-$token6 = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2IiwiZW1haWwiOiJhZG1pbi50ZXN0QGdtYWlsLmNvbSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWUiOiJBa3VuIEFkbWluIiwiaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9yb2xlIjoiQURNSU4iLCJleHAiOjE3ODgyNDMxOTksImlzcyI6IlBlbWluamFtYW5SdWFuZ0FQSSIsImF1ZCI6IlBlbWluamFtYW5SdWFuZ0NsaWVudCJ9.jFudAQJE7ddhxDyaYVuCe2su3GFmdcXTmaQaQob3BAY"
-$token22 = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyMiIsImVtYWlsIjoiYWRtaW4uaHR0cHNAZ21haWwuY29tIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZSI6IkFkbWluIEh0dHBzIiwiaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9yb2xlIjoiQURNSU4iLCJleHAiOjE3ODgyNDMyMTYsImlzcyI6IlBlbWluamFtYW5SdWFuZ0FQSSIsImF1ZCI6IlBlbWluamFtYW5SdWFuZ0NsaWVudCJ9.4i5ubNDckuPc9EH6egYWMqBGd1fJmg6Y0NedBmqdfis"
+param(
+    [Parameter(Mandatory = $true)]
+    [int]$AdminIdA,
 
-$projectPath = $PSScriptRoot
+    [Parameter(Mandatory = $true)]
+    [string]$TokenA,
 
-$body22Path = Join-Path $projectPath "body22.json"
-$body6Path  = Join-Path $projectPath "body6.json"
+    [Parameter(Mandatory = $true)]
+    [int]$AdminIdB,
 
-$body22 = @{
-    fullName     = "Admin Https"
-    phoneNumber  = "081234567890"
-    departmentId = 2
-    role         = "USER"
-    isActive     = $true
-} | ConvertTo-Json
+    [Parameter(Mandatory = $true)]
+    [string]$TokenB
+)
 
-$body6 = @{
-    fullName     = "Akun Admin"
-    phoneNumber  = "081234567890"
-    departmentId = 1
-    role         = "USER"
-    isActive     = $true
-} | ConvertTo-Json
+$baseUrl = "https://localhost:5074/api/User"
 
-Set-Content -Path $body22Path -Value $body22 -Encoding UTF8
-Set-Content -Path $body6Path -Value $body6 -Encoding UTF8
+$jobScript = {
+    param(
+        $ActorToken,
+        $TargetAdminId,
+        $BaseUrl,
+        $RequestName
+    )
 
-Write-Host "Menjalankan dua request secara bersamaan..."
+    $tempFile =
+        Join-Path $env:TEMP `
+            "admin-demote-$TargetAdminId-$([guid]::NewGuid()).json"
 
-$job1 = Start-Job -ScriptBlock {
-    param($token, $bodyPath)
+    try {
+        # Ambil data target agar field profile tetap sama.
+        $targetJson = & curl.exe `
+            -k `
+            -s `
+            "$BaseUrl/$TargetAdminId" `
+            -H "Authorization: Bearer $ActorToken"
 
-    curl.exe -k -s `
-        -X PUT `
-        "https://localhost:5074/api/User/22" `
-        -H "Authorization: Bearer $token" `
-        -H "Content-Type: application/json" `
-        --data-binary "@$bodyPath" `
-        -w "`nHTTP_STATUS:%{http_code}"
-} -ArgumentList $token6, $body22Path
+        $target =
+            ($targetJson -join "`n") |
+                ConvertFrom-Json
 
-$job2 = Start-Job -ScriptBlock {
-    param($token, $bodyPath)
+        $body = @{
+            fullName = $target.fullName
+            phoneNumber = $target.phoneNumber
+            departmentId = $target.departmentId
+            role = "USER"
+            isActive = $true
+        } | ConvertTo-Json
 
-    curl.exe -k -s `
-        -X PUT `
-        "https://localhost:5074/api/User/6" `
-        -H "Authorization: Bearer $token" `
-        -H "Content-Type: application/json" `
-        --data-binary "@$bodyPath" `
-        -w "`nHTTP_STATUS:%{http_code}"
-} -ArgumentList $token22, $body6Path
+        Set-Content `
+            -Path $tempFile `
+            -Value $body `
+            -Encoding UTF8
 
-Wait-Job $job1, $job2 | Out-Null
+        $result = & curl.exe `
+            -k `
+            -s `
+            -w "`nHTTP_STATUS:%{http_code}" `
+            -X PUT `
+            "$BaseUrl/$TargetAdminId" `
+            -H "Authorization: Bearer $ActorToken" `
+            -H "Content-Type: application/json" `
+            --data-binary "@$tempFile"
 
-Write-Host ""
-Write-Host "=== Admin 6 -> demote Admin 22 ==="
-Receive-Job $job1
+        $resultText = $result -join "`n"
 
-Write-Host ""
-Write-Host "=== Admin 22 -> demote Admin 6 ==="
-Receive-Job $job2
+        $statusMatch =
+            [regex]::Match(
+                $resultText,
+                "HTTP_STATUS:(\d{3})"
+            )
 
-Remove-Job $job1, $job2
+        $statusCode =
+            if ($statusMatch.Success) {
+                [int]$statusMatch.Groups[1].Value
+            }
+            else {
+                0
+            }
 
-Remove-Item $body22Path -ErrorAction SilentlyContinue
-Remove-Item $body6Path -ErrorAction SilentlyContinue
+        $responseBody =
+            $resultText `
+                -replace "`nHTTP_STATUS:\d{3}$", ""
+
+        [PSCustomObject]@{
+            Request = $RequestName
+            TargetAdminId = $TargetAdminId
+            StatusCode = $statusCode
+            Body = $responseBody
+        }
+    }
+    catch {
+        [PSCustomObject]@{
+            Request = $RequestName
+            TargetAdminId = $TargetAdminId
+            StatusCode = 0
+            Body = $_.Exception.Message
+        }
+    }
+    finally {
+        if (Test-Path $tempFile) {
+            Remove-Item $tempFile -Force
+        }
+    }
+}
+
+Write-Host "Menjalankan concurrent admin demotion..."
+
+$jobA = Start-Job `
+    -ScriptBlock $jobScript `
+    -ArgumentList `
+        $TokenA,
+        $AdminIdB,
+        $baseUrl,
+        "Admin $AdminIdA -> demote Admin $AdminIdB"
+
+$jobB = Start-Job `
+    -ScriptBlock $jobScript `
+    -ArgumentList `
+        $TokenB,
+        $AdminIdA,
+        $baseUrl,
+        "Admin $AdminIdB -> demote Admin $AdminIdA"
+
+Wait-Job $jobA, $jobB | Out-Null
+
+Receive-Job $jobA
+Receive-Job $jobB
+
+Remove-Job $jobA, $jobB

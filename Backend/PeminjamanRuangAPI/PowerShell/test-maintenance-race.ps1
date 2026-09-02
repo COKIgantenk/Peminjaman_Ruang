@@ -3,7 +3,11 @@ param(
     [int]$RoomId,
 
     [Parameter(Mandatory = $true)]
-    [string]$Token
+    [string]$Token,
+
+    [string]$StartDate = "2026-09-12",
+
+    [string]$EndDate = "2026-09-13"
 )
 
 $uri = "https://localhost:5074/api/Maintenance"
@@ -15,8 +19,8 @@ $body = @{
     facilitiesServiced = $null
     documentation = "Step 2.9 concurrent maintenance test"
     description = "Step 2.9 concurrent maintenance test"
-    startDate = "2026-09-02"
-    endDate = "2026-09-03"
+    startDate = $StartDate
+    endDate = $EndDate
 } | ConvertTo-Json -Compress
 
 $jobScript = {
