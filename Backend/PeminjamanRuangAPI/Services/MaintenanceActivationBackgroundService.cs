@@ -20,59 +20,96 @@ namespace PeminjamanRuangAPI.Services
         protected override async Task ExecuteAsync(
             CancellationToken stoppingToken)
         {
+            _logger.LogInformation(
+                "Maintenance background service dimulai.");
+        
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
                     using var scope = _scopeFactory.CreateScope();
-
+        
                     var maintenanceRepository =
                         scope.ServiceProvider
                             .GetRequiredService<IMaintenanceRepository>();
-
+        
                     var maintenancesToActivate =
                         await maintenanceRepository
                             .GetMaintenancesReadyToActivateAsync();
-                    
+        
                     foreach (var maintenance in maintenancesToActivate)
                     {
                         try
                         {
-                            await maintenanceRepository
-                                .ActivateMaintenanceWithStatusAsync(
+                            var activated =
+                                await maintenanceRepository
+                                    .ActivateMaintenanceWithStatusAsync(
+                                        maintenance.Id,
+                                        maintenance.RoomId,
+                                        maintenance.CreatedByAdminId,
+                                        maintenance.Description);
+        
+                            if (activated)
+                            {
+                                _logger.LogInformation(
+                                    "Maintenance {MaintenanceId} pada Room {RoomId} berhasil diaktifkan otomatis.",
                                     maintenance.Id,
-                                    maintenance.RoomId,
-                                    maintenance.CreatedByAdminId,
-                                    maintenance.Description);
+                                    maintenance.RoomId);
+                            }
+                            else
+                            {
+                                _logger.LogWarning(
+                                    "Maintenance {MaintenanceId} pada Room {RoomId} tidak dapat diaktifkan otomatis. Kemungkinan state sudah berubah.",
+                                    maintenance.Id,
+                                    maintenance.RoomId);
+                            }
                         }
                         catch (Exception ex)
                         {
                             _logger.LogError(
                                 ex,
-                                "Gagal mengaktifkan scheduled maintenance {MaintenanceId}.",
-                                maintenance.Id);
+                                "Gagal mengaktifkan scheduled maintenance {MaintenanceId} pada Room {RoomId}.",
+                                maintenance.Id,
+                                maintenance.RoomId);
                         }
                     }
-                    
+        
                     var maintenancesToComplete =
                         await maintenanceRepository
                             .GetMaintenancesReadyToCompleteAsync();
-                    
+        
                     foreach (var maintenance in maintenancesToComplete)
                     {
                         try
                         {
-                            await maintenanceRepository
-                                .CompleteScheduledMaintenanceWithStatusAsync(
+                            var completed =
+                                await maintenanceRepository
+                                    .CompleteScheduledMaintenanceWithStatusAsync(
+                                        maintenance.Id,
+                                        maintenance.RoomId);
+        
+                            if (completed)
+                            {
+                                _logger.LogInformation(
+                                    "Maintenance {MaintenanceId} pada Room {RoomId} selesai otomatis.",
                                     maintenance.Id,
                                     maintenance.RoomId);
+                            }
+                            else
+                            {
+                                _logger.LogWarning(
+                                    "Maintenance {MaintenanceId} pada Room {RoomId} tidak dapat diselesaikan otomatis. Kemungkinan state sudah berubah.",
+                                    maintenance.Id,
+                                    maintenance.RoomId);
+                            }
                         }
                         catch (Exception ex)
                         {
                             _logger.LogError(
                                 ex,
-                                "Gagal menyelesaikan scheduled maintenance {MaintenanceId}.",
-                                maintenance.Id);
+                                "Gagal menyelesaikan scheduled maintenance {MaintenanceId} pada Room {RoomId}.",
+                                maintenance.Id,
+                                maintenance.RoomId);
                         }
                     }
                 }
@@ -82,11 +119,22 @@ namespace PeminjamanRuangAPI.Services
                         ex,
                         "Terjadi error saat memproses scheduled maintenance.");
                 }
-
-                await Task.Delay(
-                    TimeSpan.FromMinutes(1),
-                    stoppingToken);
+        
+                try
+                {
+                    await Task.Delay(
+                        TimeSpan.FromMinutes(1),
+                        stoppingToken);
+                }
+                catch (OperationCanceledException)
+                    when (stoppingToken.IsCancellationRequested)
+                {
+                    break;
+                }
             }
+        
+            _logger.LogInformation(
+                "Maintenance background service dihentikan.");
         }
     }
 }
