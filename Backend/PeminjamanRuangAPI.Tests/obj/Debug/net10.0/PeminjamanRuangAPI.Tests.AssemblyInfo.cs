@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PeminjamanRuangAPI.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4a899ac9fbcde56c8ec6f9c8cc71420d68e9d281")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+546204968b97e3279f4c368c29813191e8277301")]
 [assembly: System.Reflection.AssemblyProductAttribute("PeminjamanRuangAPI.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PeminjamanRuangAPI.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
