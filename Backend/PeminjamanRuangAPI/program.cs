@@ -46,6 +46,33 @@ builder.Services.AddOpenApi(options =>
         AuthOperationTransformer>();
 });
 
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer<
+        BearerSecuritySchemeTransformer>();
+
+    options.AddOperationTransformer<
+        AuthOperationTransformer>();
+
+    options.AddOperationTransformer<
+        CommonResponseOperationTransformer>();
+});
+
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer<
+        BearerSecuritySchemeTransformer>();
+
+    options.AddOperationTransformer<
+        AuthOperationTransformer>();
+
+    options.AddOperationTransformer<
+        CommonResponseOperationTransformer>();
+
+    options.AddOperationTransformer<
+        EndpointResponseOperationTransformer>();
+});
+
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services
