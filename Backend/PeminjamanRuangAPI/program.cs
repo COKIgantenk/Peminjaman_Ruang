@@ -2,6 +2,7 @@ using Dapper;
 using System.Text;
 using System.Security.Claims;
 using PeminjamanRuangAPI.Data;
+using PeminjamanRuangAPI.OpenApi;
 using PeminjamanRuangAPI.Services;
 using PeminjamanRuangAPI.Exceptions;
 using PeminjamanRuangAPI.HealthChecks;
@@ -36,7 +37,14 @@ SqlMapper.AddTypeHandler(new TimeOnlyTypeHandler());
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddControllers();
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer<
+        BearerSecuritySchemeTransformer>();
+
+    options.AddOperationTransformer<
+        AuthOperationTransformer>();
+});
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
