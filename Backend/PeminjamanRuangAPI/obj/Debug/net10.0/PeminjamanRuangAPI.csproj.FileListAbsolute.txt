@@ -112,3 +112,4 @@ D:\Project\Peminjaman_Ruang\Backend\PeminjamanRuangAPI\bin\Debug\net10.0\System.
 D:\Project\Peminjaman_Ruang\Backend\PeminjamanRuangAPI\bin\Debug\net10.0\Microsoft.AspNetCore.OpenApi.dll
 D:\Project\Peminjaman_Ruang\Backend\PeminjamanRuangAPI\bin\Debug\net10.0\Microsoft.OpenApi.dll
 D:\Project\Peminjaman_Ruang\Backend\PeminjamanRuangAPI\obj\Debug\net10.0\PeminjamanRuangAPI.MvcApplicationPartsAssemblyInfo.cs
+D:\Project\Peminjaman_Ruang\Backend\PeminjamanRuangAPI\bin\Debug\net10.0\Swashbuckle.AspNetCore.SwaggerUI.dll

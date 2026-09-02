@@ -284,6 +284,18 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint(
+            "/openapi/v1.json",
+            "Peminjaman Ruang API v1");
+
+        options.RoutePrefix = "swagger";
+
+        options.DocumentTitle =
+            "Peminjaman Ruang API Documentation";
+    });
 }
 
 app.UseForwardedHeaders();
