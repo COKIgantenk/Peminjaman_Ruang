@@ -244,17 +244,4 @@ app.UseAuthorization();
 app.MapRazorPages();
 app.MapControllers();
 
-app.MapGet("/api/test-db", async (DatabaseConnection db) =>
-{
-    using var connection = db.CreateConnection();
-
-    var result = await connection.ExecuteScalarAsync<int>("SELECT 1");
-
-    return Results.Ok(new
-    {
-        success = result == 1,
-        message = "Database connection berhasil."
-    });
-});
-
 app.Run();

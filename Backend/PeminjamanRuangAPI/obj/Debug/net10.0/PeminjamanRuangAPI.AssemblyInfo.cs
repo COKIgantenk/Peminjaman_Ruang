@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PeminjamanRuangAPI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2943f56d2ac88c32d79f5a8ef88ea538c24743b8")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7ef3f4ed51d0addf5a3a54f71a0a4a20ca9f07da")]
 [assembly: System.Reflection.AssemblyProductAttribute("PeminjamanRuangAPI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PeminjamanRuangAPI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
