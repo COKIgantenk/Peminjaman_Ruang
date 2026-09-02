@@ -131,83 +131,96 @@ builder.Services.AddSingleton(sp =>
 
 builder.Services.AddScoped<JwtService>();
 
-var jwtSettings = builder.Configuration
-    .GetSection("JwtSettings")
-    .Get<JwtSettings>()
-    ?? throw new InvalidOperationException("JwtSettings belum dikonfigurasi.");
-
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
+    .AddJwtBearer();
+
+builder.Services
+    .AddOptions<JwtBearerOptions>(
+        JwtBearerDefaults.AuthenticationScheme)
+    .Configure<
+        Microsoft.Extensions.Options.IOptions<JwtSettings>>(
+        (options, jwtOptions) =>
         {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
+            var jwtSettings = jwtOptions.Value;
 
-            ValidIssuer = jwtSettings.Issuer,
-            ValidAudience = jwtSettings.Audience,
+            options.TokenValidationParameters =
+                new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
 
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtSettings.SecretKey)
-            ),
+                    ValidIssuer = jwtSettings.Issuer,
+                    ValidAudience = jwtSettings.Audience,
 
-            ClockSkew = TimeSpan.Zero
-        };
+                    IssuerSigningKey =
+                        new SymmetricSecurityKey(
+                            Encoding.UTF8.GetBytes(
+                                jwtSettings.SecretKey)),
 
-        options.Events = new JwtBearerEvents
-        {
-            OnTokenValidated = async context =>
+                    ClockSkew = TimeSpan.Zero
+                };
+
+            options.Events = new JwtBearerEvents
             {
-                var userIdClaim =
-                    context.Principal?
-                        .FindFirst(ClaimTypes.NameIdentifier)?
-                        .Value;
-
-                if (!int.TryParse(userIdClaim, out int userId))
+                OnTokenValidated = async context =>
                 {
-                    context.Fail("User ID pada token tidak valid.");
-                    return;
+                    var userIdClaim =
+                        context.Principal?
+                            .FindFirst(ClaimTypes.NameIdentifier)?
+                            .Value;
+
+                    if (!int.TryParse(
+                        userIdClaim,
+                        out int userId))
+                    {
+                        context.Fail(
+                            "User ID pada token tidak valid.");
+                        return;
+                    }
+
+                    var userRepository =
+                        context.HttpContext.RequestServices
+                            .GetRequiredService<IUserRepository>();
+
+                    var user =
+                        await userRepository
+                            .GetUserByIdAsync(userId);
+
+                    if (user == null)
+                    {
+                        context.Fail(
+                            "User tidak ditemukan.");
+                        return;
+                    }
+
+                    if (!user.IsActive)
+                    {
+                        context.Fail(
+                            "Akun user sudah tidak aktif.");
+                        return;
+                    }
+
+                    var tokenRole =
+                        context.Principal?
+                            .FindFirst(ClaimTypes.Role)?
+                            .Value;
+
+                    if (string.IsNullOrWhiteSpace(tokenRole) ||
+                        !string.Equals(
+                            tokenRole,
+                            user.Role,
+                            StringComparison.OrdinalIgnoreCase))
+                    {
+                        context.Fail(
+                            "Role user sudah berubah.");
+                        return;
+                    }
                 }
-
-                var userRepository =
-                    context.HttpContext.RequestServices
-                        .GetRequiredService<IUserRepository>();
-
-                var user =
-                    await userRepository.GetUserByIdAsync(userId);
-
-                if (user == null)
-                {
-                    context.Fail("User tidak ditemukan.");
-                    return;
-                }
-
-                if (!user.IsActive)
-                {
-                    context.Fail("Akun user sudah tidak aktif.");
-                    return;
-                }
-
-                var tokenRole =
-                    context.Principal?
-                        .FindFirst(ClaimTypes.Role)?
-                        .Value;
-
-                if (string.IsNullOrWhiteSpace(tokenRole) ||
-                    !string.Equals(
-                        tokenRole,
-                        user.Role,
-                        StringComparison.OrdinalIgnoreCase))
-                {
-                    context.Fail("Role user sudah berubah.");
-                    return;
-                }
-            }
-        };
-    });
+            };
+        });
 
 builder.Services.AddAuthorization();
 
@@ -350,3 +363,7 @@ app.MapHealthChecks(
     });
 
 app.Run();
+
+public partial class Program
+{
+}
