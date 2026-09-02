@@ -1,0 +1,47 @@
+# =========================
+# .NET build output
+# =========================
+
+**/bin/
+**/obj/
+
+# =========================
+# Visual Studio / IDE
+# =========================
+
+.vs/
+.vscode/
+*.user
+*.suo
+
+# =========================
+# Local / development config
+# =========================
+
+**/appsettings.Development.json
+**/appsettings.Local.json
+
+# =========================
+# Secrets / environment files
+# =========================
+
+.env
+.env.*
+secrets.json
+**/secrets.json
+
+# =========================
+# Test / coverage artifacts
+# =========================
+
+TestResults/
+**/TestResults/
+coverage/
+**/coverage/
+
+# =========================
+# OS generated
+# =========================
+
+.DS_Store
+Thumbs.db
