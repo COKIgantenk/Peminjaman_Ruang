@@ -36,6 +36,7 @@ SqlMapper.AddTypeHandler(new TimeOnlyTypeHandler());
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddControllers();
+builder.Services.AddOpenApi();
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
@@ -244,6 +245,11 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+}
 
 app.UseForwardedHeaders();
 

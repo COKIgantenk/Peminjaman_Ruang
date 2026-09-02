@@ -10,6 +10,7 @@
         "dependencies": {
           "Dapper": "2.1.79",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "10.0.11",
+          "Microsoft.AspNetCore.OpenApi": "10.0.11",
           "Npgsql": "10.0.3"
         },
         "runtime": {
@@ -30,6 +31,17 @@
         },
         "runtime": {
           "lib/net10.0/Microsoft.AspNetCore.Authentication.JwtBearer.dll": {
+            "assemblyVersion": "10.0.11.0",
+            "fileVersion": "10.0.1126.37416"
+          }
+        }
+      },
+      "Microsoft.AspNetCore.OpenApi/10.0.11": {
+        "dependencies": {
+          "Microsoft.OpenApi": "2.7.5"
+        },
+        "runtime": {
+          "lib/net10.0/Microsoft.AspNetCore.OpenApi.dll": {
             "assemblyVersion": "10.0.11.0",
             "fileVersion": "10.0.1126.37416"
           }
@@ -108,6 +120,14 @@
           }
         }
       },
+      "Microsoft.OpenApi/2.7.5": {
+        "runtime": {
+          "lib/net8.0/Microsoft.OpenApi.dll": {
+            "assemblyVersion": "2.7.5.0",
+            "fileVersion": "2.7.5.0"
+          }
+        }
+      },
       "Npgsql/10.0.3": {
         "runtime": {
           "lib/net10.0/Npgsql.dll": {
@@ -149,6 +169,13 @@
       "sha512": "sha512-Dy9yElSej0rVQL8LBpCLatWTKXNH6h6VBVFmGndTCf1Wge0jSvH9U8mml6ddVDAQ089q1/fDYlhyukHSgx8unQ==",
       "path": "microsoft.aspnetcore.authentication.jwtbearer/10.0.11",
       "hashPath": "microsoft.aspnetcore.authentication.jwtbearer.10.0.11.nupkg.sha512"
+    },
+    "Microsoft.AspNetCore.OpenApi/10.0.11": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-R/1EATnPLU+gRfB6lwVkMcymmyAY5ppBBdRN/5lhNEiT3xP1sWccuSFkU/f1lQvN/WgRq5Vn8AhCdE3fqgsL/w==",
+      "path": "microsoft.aspnetcore.openapi/10.0.11",
+      "hashPath": "microsoft.aspnetcore.openapi.10.0.11.nupkg.sha512"
     },
     "Microsoft.Bcl.Cryptography/10.0.2": {
       "type": "package",
@@ -198,6 +225,13 @@
       "sha512": "sha512-GtPC1S02uH1gOO4fQ+zRysIicKmEXaYFP8PIkdJYXqMyruYhopre4ozVHp0XiDSA0+GJvOZH9prxCPvgBMg4Ww==",
       "path": "microsoft.identitymodel.tokens/8.19.2",
       "hashPath": "microsoft.identitymodel.tokens.8.19.2.nupkg.sha512"
+    },
+    "Microsoft.OpenApi/2.7.5": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-0FA67RSnRM4tcBKqiqVu/HPdZ9+QOKbmeRjxRUGTCjPU4C0bmUhd97Dso7Yild5P7nOV6GxJ2xrK0Kv/O9xp0w==",
+      "path": "microsoft.openapi/2.7.5",
+      "hashPath": "microsoft.openapi.2.7.5.nupkg.sha512"
     },
     "Npgsql/10.0.3": {
       "type": "package",
