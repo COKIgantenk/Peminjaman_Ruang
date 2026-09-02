@@ -434,3 +434,5 @@ D:\Project\Peminjaman_Ruang\Backend\PeminjamanRuangAPI.Tests\obj\Debug\net10.0\r
 D:\Project\Peminjaman_Ruang\Backend\PeminjamanRuangAPI.Tests\obj\Debug\net10.0\PeminjamanRuangAPI.Tests.pdb
 d:\Project\Peminjaman_Ruang\Backend\PeminjamanRuangAPI.Tests\obj\Debug\net10.0\PeminjamanRuangAPI.Tests.genruntimeconfig.cache
 d:\Project\Peminjaman_Ruang\Backend\PeminjamanRuangAPI.Tests\obj\Debug\net10.0\ref\PeminjamanRuangAPI.Tests.dll
+D:\Project\Peminjaman_Ruang\Backend\PeminjamanRuangAPI.Tests\bin\Debug\net10.0\Castle.Core.dll
+D:\Project\Peminjaman_Ruang\Backend\PeminjamanRuangAPI.Tests\bin\Debug\net10.0\Moq.dll
