@@ -24,6 +24,11 @@ namespace PeminjamanRuangAPI.Repositories
         Task<bool> CreateRoomStatusHistoryAsync(
             RoomStatusHistory roomStatusHistory);
 
+        Task<bool> CreateRoomStatusHistoryAsync(
+            RoomStatusHistory roomStatusHistory,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction);
+
         Task<bool> ChangeRoomStatusAsync(
             int roomId,
             string Status,

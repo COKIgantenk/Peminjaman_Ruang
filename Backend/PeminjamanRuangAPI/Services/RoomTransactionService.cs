@@ -9,15 +9,18 @@ namespace PeminjamanRuangAPI.Services
         private readonly DatabaseConnection _dbConnection;
         private readonly IRoomRepository _roomRepository;
         private readonly IAuditLogRepository _auditLogRepository;
+        private readonly IRoomStatusHistoryRepository _roomStatusHistoryRepository;
 
         public RoomTransactionService(
             DatabaseConnection dbConnection,
             IRoomRepository roomRepository,
-            IAuditLogRepository auditLogRepository)
+            IAuditLogRepository auditLogRepository,
+            IRoomStatusHistoryRepository roomStatusHistoryRepository)
         {
             _dbConnection = dbConnection;
             _roomRepository = roomRepository;
             _auditLogRepository = auditLogRepository;
+            _roomStatusHistoryRepository = roomStatusHistoryRepository;
         }
 
         public async Task<int> CreateRoomAsync(
@@ -44,6 +47,26 @@ namespace PeminjamanRuangAPI.Services
                 }
 
                 room.Id = roomId;
+
+                var initialStatus = new RoomStatusHistory
+                {
+                    RoomId = roomId,
+                    Status = "ACTIVE",
+                    Reason = "Room dibuat.",
+                    ChangedByAdminId = adminId
+                };
+                
+                var historyCreated =
+                    await _roomStatusHistoryRepository.CreateRoomStatusHistoryAsync(
+                        initialStatus,
+                        connection,
+                        transaction);
+                
+                if (!historyCreated)
+                {
+                    await transaction.RollbackAsync();
+                    return 0;
+                }
 
                 var auditLog = new AuditLog
                 {
@@ -112,11 +135,18 @@ namespace PeminjamanRuangAPI.Services
                         $"Capacity: {oldCapacity} -> {room.Capacity}."
                 };
 
-                await _auditLogRepository.CreateAuditLogAsync(
-                    auditLog,
-                    connection,
-                    transaction);
-
+                var auditSuccess =
+                    await _auditLogRepository.CreateAuditLogAsync(
+                        auditLog,
+                        connection,
+                        transaction);
+                
+                if (!auditSuccess)
+                {
+                    await transaction.RollbackAsync();
+                    return false;
+                }
+                
                 await transaction.CommitAsync();
 
                 return true;

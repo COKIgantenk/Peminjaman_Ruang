@@ -73,8 +73,8 @@ namespace PeminjamanRuangAPI.Controllers
         {
             var facility = new Facility
             {
-                Name = request.Name,
-                Description = request.Description
+                Name = request.Name.Trim(),
+                Description = request.Description.Trim()
             };
 
             var adminIdClaim =
@@ -137,9 +137,8 @@ namespace PeminjamanRuangAPI.Controllers
             var oldName = facility.Name;
             var oldDescription = facility.Description;
 
-            facility.Name = request.Name;
-            facility.Description = request.Description;
-
+            facility.Name = request.Name.Trim();
+            facility.Description = request.Description.Trim();
             var success =
                 await _facilityTransactionService.UpdateFacilityAsync(
                     facility,

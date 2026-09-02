@@ -16,15 +16,18 @@ namespace PeminjamanRuangAPI.Controllers
         private readonly IRoomRepository _roomRepository;
         private readonly IFacilityRepository _facilityRepository;
         private readonly RoomTransactionService _roomTransactionService;
+        private readonly RoomStatusTransactionService _roomStatusTransactionService;    
 
         public RoomController(
             IRoomRepository roomRepository,
             IFacilityRepository facilityRepository,
-            RoomTransactionService roomTransactionService)
+            RoomTransactionService roomTransactionService,
+            RoomStatusTransactionService roomStatusTransactionService)
         {
             _roomRepository = roomRepository;
             _facilityRepository = facilityRepository;
             _roomTransactionService = roomTransactionService;
+            _roomStatusTransactionService = roomStatusTransactionService;
         }
 
         [HttpGet]
@@ -190,11 +193,13 @@ namespace PeminjamanRuangAPI.Controllers
 
             var room = new Room
             {
-                Name = request.Name,
-                Location = request.Location,
+                Name = request.Name.Trim(),
+                Location = request.Location.Trim(),
                 Capacity = request.Capacity,
-                Description = request.Description,
-                ImageUrl = request.ImageUrl,
+                Description = request.Description.Trim(),
+                ImageUrl = string.IsNullOrWhiteSpace(request.ImageUrl)
+                    ? null
+                    : request.ImageUrl.Trim(),
                 IsActive = true
             };
 
@@ -256,12 +261,13 @@ namespace PeminjamanRuangAPI.Controllers
             var oldLocation = room.Location;
             var oldCapacity = room.Capacity;
 
-            room.Name = request.Name;
-            room.Location = request.Location;
+            room.Name = request.Name.Trim();
+            room.Location = request.Location.Trim();
             room.Capacity = request.Capacity;
-            room.Description = request.Description;
-            room.ImageUrl = request.ImageUrl;
-            room.IsActive = request.IsActive;
+            room.Description = request.Description.Trim();
+            room.ImageUrl = string.IsNullOrWhiteSpace(request.ImageUrl)
+                ? null
+                : request.ImageUrl.Trim();
 
             var success =
                 await _roomTransactionService.UpdateRoomAsync(
@@ -299,16 +305,58 @@ namespace PeminjamanRuangAPI.Controllers
                 });
             }
 
-            var success = await _roomRepository.DeactivateRoomAsync(id);
-
-            if (!success)
+            var adminIdClaim =
+                User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            
+            if (!int.TryParse(adminIdClaim, out int adminId))
+            {
+                return Unauthorized(new
+                {
+                    message = "Token Admin tidak valid."
+                });
+            }
+            
+            var result =
+                await _roomStatusTransactionService.ChangeRoomStatusAsync(
+                    id,
+                    "OUT_OF_SERVICE",
+                    null,
+                    adminId);
+            
+            if (result == -1)
+            {
+                return BadRequest(new
+                {
+                    message = "Room sudah berstatus OUT_OF_SERVICE."
+                });
+            }
+            
+            if (result == -2)
+            {
+                return Conflict(new
+                {
+                    message =
+                        "Room tidak dapat dinonaktifkan karena sedang maintenance atau cleaning."
+                });
+            }
+            
+            if (result == -3)
+            {
+                return Conflict(new
+                {
+                    message =
+                        "Room sedang digunakan dan tidak dapat dinonaktifkan."
+                });
+            }
+            
+            if (result == 0)
             {
                 return BadRequest(new
                 {
                     message = "Room gagal dinonaktifkan."
                 });
             }
-
+            
             return Ok(new
             {
                 message = "Room berhasil dinonaktifkan."

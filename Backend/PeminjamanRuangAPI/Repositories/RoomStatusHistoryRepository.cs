@@ -143,6 +143,38 @@ namespace PeminjamanRuangAPI.Repositories
             return result > 0;
         }
 
+        public async Task<bool> CreateRoomStatusHistoryAsync(
+            RoomStatusHistory roomStatusHistory,
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction)
+        {
+            const string query = @"
+                INSERT INTO room_status_history
+                (
+                    room_id,
+                    status,
+                    reason,
+                    changed_by_admin_id,
+                    created_at
+                )
+                VALUES
+                (
+                    @RoomId,
+                    @Status,
+                    @Reason,
+                    @ChangedByAdminId,
+                    NOW()
+                )";
+        
+            var result =
+                await connection.ExecuteAsync(
+                    query,
+                    roomStatusHistory,
+                    transaction);
+        
+            return result > 0;
+        }
+
         public async Task<bool> ChangeRoomStatusAsync(
             int roomId,
             string status,

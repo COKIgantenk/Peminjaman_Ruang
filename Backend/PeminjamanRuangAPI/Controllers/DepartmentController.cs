@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
-using PeminjamanRuangAPI.Services;
+using PeminjamanRuangAPI.DTOs;
 using PeminjamanRuangAPI.Models;
+using PeminjamanRuangAPI.Services;
 using PeminjamanRuangAPI.Repositories;
 
 namespace PeminjamanRuangAPI.Controllers
@@ -33,8 +34,14 @@ namespace PeminjamanRuangAPI.Controllers
         [HttpPost]
         [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> CreateDepartment(
-            [FromBody] Department department)
+            [FromBody] CreateDepartmentRequestDto request)
         {
+
+            var department = new Department
+            {
+                Name = request.Name.Trim()
+            };
+            
             var adminIdClaim =
                 User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
