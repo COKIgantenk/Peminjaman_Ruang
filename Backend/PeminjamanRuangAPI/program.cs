@@ -4,12 +4,15 @@ using System.Security.Claims;
 using PeminjamanRuangAPI.Data;
 using PeminjamanRuangAPI.Services;
 using PeminjamanRuangAPI.Exceptions;
+using PeminjamanRuangAPI.HealthChecks;
 using PeminjamanRuangAPI.Repositories;
 using PeminjamanRuangAPI.Configuration;
 using PeminjamanRuangAPI.Data.TypeHandlers;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,6 +26,16 @@ builder.Services.AddControllers();
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services
+    .AddHealthChecks()
+    .AddCheck(
+        "self",
+        () => HealthCheckResult.Healthy(
+            "API berjalan."),
+        tags: new[] { "live" })
+    .AddCheck<DatabaseHealthCheck>(
+        "database",
+        tags: new[] { "ready" });
 
 // Register DatabaseConnection
 builder.Services.AddScoped<DatabaseConnection>();
@@ -244,4 +257,28 @@ app.UseAuthorization();
 app.MapRazorPages();
 app.MapControllers();
 
+app.MapHealthChecks(
+    "/health/live",
+    new HealthCheckOptions
+    {
+        Predicate =
+            registration =>
+                registration.Tags.Contains("live"),
+
+        ResponseWriter =
+            HealthCheckResponseWriter.WriteResponse
+    });
+
+app.MapHealthChecks(
+    "/health/ready",
+    new HealthCheckOptions
+    {
+        Predicate =
+            registration =>
+                registration.Tags.Contains("ready"),
+
+        ResponseWriter =
+            HealthCheckResponseWriter.WriteResponse
+    });
+    
 app.Run();
